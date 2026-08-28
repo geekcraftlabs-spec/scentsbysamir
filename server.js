@@ -1,19 +1,22 @@
 const express = require('express');
 const path = require('path');
+const { Pool } = require('pg');
 const app = express();
 
-// ===== DATABASE SETUP =====
-let pool = null;
-const isProduction = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+// ===== LOGGING (to debug 404s) =====
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.url}`);
+  next();
+});
 
-if (isProduction) {
-  const { Pool } = require('pg');
+// ===== DATABASE (skip if no DATABASE_URL) =====
+let pool;
+if (process.env.POSTGRES_URL || process.env.DATABASE_URL) {
   pool = new Pool({
-    connectionString: isProduction,
+    connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
   });
-
-  // Create orders table
+  // Create table
   pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
       id VARCHAR(20) PRIMARY KEY,
@@ -28,161 +31,119 @@ if (isProduction) {
       status VARCHAR(20) DEFAULT 'pending'
     );
   `).catch(err => console.error('Table creation error:', err));
-
-  console.log('✅ Connected to Neon PostgreSQL');
 } else {
-  console.log('⚠️ No database URL found – running in local demo mode (orders will not persist)');
+  console.log('⚠️ No DATABASE_URL set – using in‑memory fallback (orders won\'t persist).');
+  // Fallback: in‑memory store (for local testing without DB)
+  let inMemoryOrders = [];
+  // Override API routes to use memory if no DB
+  app.get('/api/orders', (req, res) => res.json(inMemoryOrders));
+  app.post('/api/orders', (req, res) => {
+    const order = req.body;
+    inMemoryOrders.unshift(order);
+    res.status(201).json({ success: true });
+  });
+  app.patch('/api/orders/:id', (req, res) => {
+    const { id } = req.params;
+    const order = inMemoryOrders.find(o => o.id === id);
+    if (order) {
+      order.status = req.body.status;
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Order not found' });
+    }
+  });
 }
 
 // ===== MIDDLEWARE =====
 app.use(express.json());
 
 // ===== SERVE STATIC FILES =====
+// Serve from the current directory (where server.js is)
 app.use(express.static(path.join(__dirname)));
 
+// Explicitly handle .css, .js, .webp, .jpg to ensure MIME types
+app.get(/\.(css|js|webp|jpg|png|svg|ico)$/, (req, res, next) => {
+  const filePath = path.join(__dirname, req.path);
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.log(`❌ Failed to serve static file: ${req.path}`, err);
+      next();
+    }
+  });
+});
+
 // ===== ROUTES =====
+// Serve HTML pages
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.get('/index.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.get('/shop.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'shop.html'));
+});
+app.get('/dashboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dashboard.html'));
+});
+app.get('/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
 });
 
 // ===== PRODUCT DATA =====
 const products = [
-  { id: 'asad', name: 'Lattafa Asad Bourbon', price: 650, category: 'men', brand: 'lattafa', image: 'asad-bourbon.webp', description: 'Spicy, woody, and amber – bold and masculine.' },
-  { id: 'club-de-nuit', name: 'Armaaf Club de Nuit Intense', price: 1000, category: 'men', brand: 'armaaf', image: 'CLUB-DE-NUIT-INTENSE-MAN.webp', description: 'A masterpiece of fresh, smoky, and woody accords – iconic and long-lasting.' },
-  { id: '9pm', name: 'Afnan 9pm', price: 850, category: 'men', brand: 'afnan', image: '9pm.webp', description: 'Oriental vanilla with a playful twist – sweet, warm, and addictive.' },
-  { id: 'ramz-silver', name: 'Lattafa Ramz Silver', price: 550, category: 'men', brand: 'lattafa', image: 'RAMZ-SILVER.webp', description: 'Fresh aquatic lavender with a modern, versatile character – perfect for daily wear.' },
-  { id: 'al-qiam-gold', name: 'Lattafa Al Qiam Gold', price: 750, category: 'men', brand: 'lattafa', image: 'AL-QIAM-GOLD.webp', description: 'A regal fusion of oud, saffron, and amber – opulent and commanding.' },
-  { id: 'yara', name: 'Lattafa Yara', price: 650, category: 'women', brand: 'lattafa', image: 'YARA-PINK-1273x1536.webp', description: 'Soft, floral, and creamy – a gentle embrace of feminine elegance.' },
-  { id: 'coral', name: 'Lattafa Ana Abiyedh Coral', price: 550, category: 'women', brand: 'lattafa', image: 'ANA-ABIYEDH-CORAL.webp', description: 'Tropical fruits, vanilla, and musk – sweet, playful, and unforgettable.' },
-  { id: 'eclaire', name: 'Lattafa Eclaire', price: 650, category: 'women', brand: 'lattafa', image: 'ECLAIRE.webp', description: 'Gourmand vanilla and caramel – a deliciously addictive scent.' },
-  { id: 'delilah', name: 'Maison Alhambra Delilah', price: 550, category: 'women', brand: 'fragrance-deluxe', image: 'DELILAH.webp', description: 'A floral fruity bouquet – modern, bright, and effortlessly charming.' },
-  { id: 'pink-velvet', name: 'Maison Alhambra Pink Velvet', price: 700, category: 'women', brand: 'fragrance-deluxe', image: 'DSC7500-1300x1536.jpg', description: 'Chypre floral with a velvety smoothness – luxurious and timeless.' },
-  { id: 'khamrah', name: 'Lattafa Khamrah Dukhan', price: 800, category: 'unisex', brand: 'lattafa', image: 'KHAMRAH-DUKHAN.webp', description: 'Gourmand dates, cinnamon, and praline – warm, cozy, and addictive.' },
-  { id: 'ajwad', name: 'Lattafa Ajwad', price: 650, category: 'unisex', brand: 'lattafa', image: 'Ajwad.webp', description: 'Woody aromatic with a fresh, green twist – sophisticated and versatile.' },
-  { id: 'ameerat', name: 'Asdaaf Ameerat Al Arab', price: 550, category: 'unisex', brand: 'fragrance-world', image: 'Ameerat-Al-Arab.webp', description: 'An oriental floral blend – rich, exotic, and deeply captivating.' },
-  { id: '9am-dive', name: 'Afnan 9am Dive', price: 1100, category: 'unisex', brand: 'afnan', image: '9-AM-DIVE.webp', description: 'Aromatic aquatic with a burst of citrus – refreshing and energising.' },
-  { id: 'afeef', name: 'Lattafa Afeef', price: 950, category: 'unisex', brand: 'lattafa', image: 'Afeef.webp', description: 'A sophisticated blend of rose, amber, and musk – refined and elegant.' }
+  // ... (keep your product list here)
 ];
 
-// ===== DYNAMIC PRODUCT DETAIL PAGE =====
+// ===== DYNAMIC PRODUCT DETAIL =====
 app.get('/product-detail.html', (req, res) => {
-  const productId = req.query.id;
-  const product = products.find(p => p.id === productId);
-  if (!product) return res.status(404).send('Product not found');
-
-  const baseUrl = process.env.BASE_URL || `http://localhost:3000`;
-  const imageUrl = `${baseUrl}/images/products/${product.image}`;
-  const pageUrl = `${baseUrl}/product-detail.html?id=${product.id}`;
-
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${product.name} – Scents by Samir</title>
-  <meta property="og:title" content="${product.name} – Scents by Samir" />
-  <meta property="og:description" content="${product.description}" />
-  <meta property="og:image" content="${imageUrl}" />
-  <meta property="og:url" content="${pageUrl}" />
-  <meta property="og:type" content="product" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <link rel="stylesheet" href="/css/style.css">
-  <style>
-    .product-detail { display: flex; gap: 40px; align-items: flex-start; max-width: 900px; margin: 40px auto; padding: 40px; background: rgba(255,255,255,0.03); border-radius: 32px; border: 1px solid rgba(255,255,255,0.06); }
-    .product-detail img { width: 300px; height: 300px; object-fit: contain; filter: drop-shadow(0 16px 32px rgba(0,0,0,0.6)); }
-    .product-info { flex: 1; }
-    .product-info h1 { font-size: 32px; margin-bottom: 8px; }
-    .product-info .price { font-size: 28px; color: #c084fc; font-weight: 700; }
-    .product-info p { color: #9ca3af; line-height: 1.6; margin: 16px 0; }
-    .btn-primary { margin-top: 16px; }
-    .back-link { display: inline-block; margin-top: 24px; color: #9ca3af; text-decoration: none; }
-  </style>
-</head>
-<body>
-  <div class="container" style="padding: 20px;">
-    <a href="/" class="back-link">← Back to Shop</a>
-    <div class="product-detail">
-      <img src="/images/products/${product.image}" alt="${product.name}">
-      <div class="product-info">
-        <span style="background: rgba(124,58,237,0.2); padding: 4px 14px; border-radius: 40px; font-size: 12px; text-transform: uppercase; color: #a78bfa;">${product.category}</span>
-        <h1>${product.name}</h1>
-        <div class="price">R${product.price.toFixed(2)}</div>
-        <p>${product.description}</p>
-        <button class="btn-primary" onclick="addToCart('${product.id}')">Add to Cart</button>
-        <br>
-        <button class="btn-primary" style="background: #10b981; box-shadow: 0 4px 14px rgba(16,185,129,0.4);" onclick="buyNow('${product.id}')">Buy Now</button>
-      </div>
-    </div>
-  </div>
-  <script src="/js/products.js"></script>
-  <script src="/js/cart.js"></script>
-  <script>
-    function buyNow(productId) { addToCart(productId); openCheckout(); }
-  </script>
-</body>
-</html>
-  `;
-  res.send(html);
+  // ... (your existing product detail handler)
 });
 
-// ===== API ENDPOINTS =====
-// Helper: if DB is not available, return mock data or error
-const handleDb = (req, res, callback) => {
-  if (!pool) {
-    return res.status(500).json({ error: 'Database not available in local demo mode' });
-  }
-  callback(pool);
-};
+// ===== API ROUTES (if pool exists, use it) =====
+if (pool) {
+  // Use the real DB routes
+  app.get('/api/orders', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM orders ORDER BY timestamp DESC');
+      res.json(result.rows);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Database error' });
+    }
+  });
 
-app.get('/api/orders', async (req, res) => {
-  if (!pool) {
-    return res.json([]); // return empty array in local demo
-  }
-  try {
-    const result = await pool.query('SELECT * FROM orders ORDER BY timestamp DESC');
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
+  app.post('/api/orders', async (req, res) => {
+    const { id, items, subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status } = req.body;
+    try {
+      await pool.query(
+        `INSERT INTO orders (id, items, subtotal, delivery_cost, total, delivery, customer_name, whatsapp, timestamp, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [id, JSON.stringify(items), subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status || 'pending']
+      );
+      res.status(201).json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Database error' });
+    }
+  });
 
-app.post('/api/orders', async (req, res) => {
-  if (!pool) {
-    return res.status(500).json({ error: 'Database not available in local demo mode' });
-  }
-  const { id, items, subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status } = req.body;
-  try {
-    await pool.query(
-      `INSERT INTO orders (id, items, subtotal, delivery_cost, total, delivery, customer_name, whatsapp, timestamp, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      [id, JSON.stringify(items), subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status || 'pending']
-    );
-    res.status(201).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
+  app.patch('/api/orders/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    try {
+      await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id]);
+      res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Database error' });
+    }
+  });
+}
 
-app.patch('/api/orders/:id', async (req, res) => {
-  if (!pool) {
-    return res.status(500).json({ error: 'Database not available in local demo mode' });
-  }
-  const { id } = req.params;
-  const { status } = req.body;
-  try {
-    await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
-// ===== CATCH-ALL: Serve index.html for any other route =====
+// ===== CATCH‑ALL: serve index.html for SPA routes =====
 app.get('*', (req, res) => {
+  // If it looks like a static file request, return 404
   if (req.path.includes('.') && !req.path.includes('.html')) {
     return res.status(404).send('File not found');
   }
