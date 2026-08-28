@@ -1,153 +1,145 @@
 const express = require('express');
 const path = require('path');
-const { Pool } = require('pg');
 const app = express();
 
-// ===== LOGGING (to debug 404s) =====
+// ===== LOGGING =====
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.url}`);
   next();
 });
 
-// ===== DATABASE (skip if no DATABASE_URL) =====
-let pool;
-if (process.env.POSTGRES_URL || process.env.DATABASE_URL) {
-  pool = new Pool({
-    connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-  });
-  // Create table
-  pool.query(`
-    CREATE TABLE IF NOT EXISTS orders (
-      id VARCHAR(20) PRIMARY KEY,
-      items JSONB NOT NULL,
-      subtotal DECIMAL(10,2) NOT NULL,
-      delivery_cost DECIMAL(10,2) NOT NULL,
-      total DECIMAL(10,2) NOT NULL,
-      delivery VARCHAR(100) NOT NULL,
-      customer_name VARCHAR(100) NOT NULL,
-      whatsapp VARCHAR(20) NOT NULL,
-      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      status VARCHAR(20) DEFAULT 'pending'
-    );
-  `).catch(err => console.error('Table creation error:', err));
-} else {
-  console.log('⚠️ No DATABASE_URL set – using in‑memory fallback (orders won\'t persist).');
-  // Fallback: in‑memory store (for local testing without DB)
-  let inMemoryOrders = [];
-  // Override API routes to use memory if no DB
-  app.get('/api/orders', (req, res) => res.json(inMemoryOrders));
-  app.post('/api/orders', (req, res) => {
-    const order = req.body;
-    inMemoryOrders.unshift(order);
-    res.status(201).json({ success: true });
-  });
-  app.patch('/api/orders/:id', (req, res) => {
-    const { id } = req.params;
-    const order = inMemoryOrders.find(o => o.id === id);
-    if (order) {
-      order.status = req.body.status;
-      res.json({ success: true });
-    } else {
-      res.status(404).json({ error: 'Order not found' });
-    }
-  });
-}
-
 // ===== MIDDLEWARE =====
 app.use(express.json());
 
-// ===== SERVE STATIC FILES =====
-// Serve from the current directory (where server.js is)
-app.use(express.static(path.join(__dirname)));
+// ===== STATIC FILE SERVING – EXPLICIT PATHS =====
+const rootDir = path.resolve('.');
+console.log('📁 Root directory:', rootDir);
 
-// Explicitly handle .css, .js, .webp, .jpg to ensure MIME types
-app.get(/\.(css|js|webp|jpg|png|svg|ico)$/, (req, res, next) => {
-  const filePath = path.join(__dirname, req.path);
-  res.sendFile(filePath, (err) => {
-    if (err) {
-      console.log(`❌ Failed to serve static file: ${req.path}`, err);
-      next();
-    }
-  });
-});
+// Serve static files from the root directory
+app.use(express.static(rootDir));
 
-// ===== ROUTES =====
-// Serve HTML pages
+// Explicitly map common asset folders
+app.use('/css', express.static(path.join(rootDir, 'css')));
+app.use('/js', express.static(path.join(rootDir, 'js')));
+app.use('/images', express.static(path.join(rootDir, 'images')));
+
+// Fallback: try parent directory (Vercel sometimes puts files one level up)
+app.use(express.static(path.resolve(rootDir, '..')));
+
+// ===== HTML ROUTES =====
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(rootDir, 'index.html'));
 });
 app.get('/index.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(rootDir, 'index.html'));
 });
 app.get('/shop.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'shop.html'));
+  res.sendFile(path.join(rootDir, 'shop.html'));
 });
 app.get('/dashboard.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dashboard.html'));
+  res.sendFile(path.join(rootDir, 'dashboard.html'));
 });
 app.get('/login.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'login.html'));
+  res.sendFile(path.join(rootDir, 'login.html'));
 });
 
 // ===== PRODUCT DATA =====
 const products = [
-  // ... (keep your product list here)
+  // ... (keep your product list as before)
 ];
 
-// ===== DYNAMIC PRODUCT DETAIL =====
+// ===== PRODUCT DETAIL =====
 app.get('/product-detail.html', (req, res) => {
-  // ... (your existing product detail handler)
+  const productId = req.query.id;
+  const product = products.find(p => p.id === productId);
+  if (!product) return res.status(404).send('Product not found');
+
+  const baseUrl = process.env.BASE_URL || `https://${req.get('host')}`;
+  const imageUrl = `${baseUrl}/images/products/${product.image}`;
+  const pageUrl = `${baseUrl}/product-detail.html?id=${product.id}`;
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${product.name} – Scents by Samir</title>
+  <meta property="og:title" content="${product.name} – Scents by Samir" />
+  <meta property="og:description" content="${product.description}" />
+  <meta property="og:image" content="${imageUrl}" />
+  <meta property="og:url" content="${pageUrl}" />
+  <meta property="og:type" content="product" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .product-detail { display: flex; gap: 40px; align-items: flex-start; max-width: 900px; margin: 40px auto; padding: 40px; background: rgba(255,255,255,0.03); border-radius: 32px; border: 1px solid rgba(255,255,255,0.06); }
+    .product-detail img { width: 300px; height: 300px; object-fit: contain; filter: drop-shadow(0 16px 32px rgba(0,0,0,0.6)); }
+    .product-info { flex: 1; }
+    .product-info h1 { font-size: 32px; margin-bottom: 8px; }
+    .product-info .price { font-size: 28px; color: #c084fc; font-weight: 700; }
+    .product-info p { color: #9ca3af; line-height: 1.6; margin: 16px 0; }
+    .btn-primary { margin-top: 16px; }
+    .back-link { display: inline-block; margin-top: 24px; color: #9ca3af; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container" style="padding: 20px;">
+    <a href="/" class="back-link">← Back to Shop</a>
+    <div class="product-detail">
+      <img src="/images/products/${product.image}" alt="${product.name}">
+      <div class="product-info">
+        <span style="background: rgba(124,58,237,0.2); padding: 4px 14px; border-radius: 40px; font-size: 12px; text-transform: uppercase; color: #a78bfa;">${product.category}</span>
+        <h1>${product.name}</h1>
+        <div class="price">R${product.price.toFixed(2)}</div>
+        <p>${product.description}</p>
+        <button class="btn-primary" onclick="addToCart('${product.id}')">Add to Cart</button>
+        <br>
+        <button class="btn-primary" style="background: #10b981; box-shadow: 0 4px 14px rgba(16,185,129,0.4);" onclick="buyNow('${product.id}')">Buy Now</button>
+      </div>
+    </div>
+  </div>
+  <script src="/js/products.js"></script>
+  <script src="/js/cart.js"></script>
+  <script>
+    function buyNow(productId) { addToCart(productId); openCheckout(); }
+  </script>
+</body>
+</html>
+  `;
+  res.send(html);
 });
 
-// ===== API ROUTES (if pool exists, use it) =====
-if (pool) {
-  // Use the real DB routes
-  app.get('/api/orders', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT * FROM orders ORDER BY timestamp DESC');
-      res.json(result.rows);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Database error' });
-    }
-  });
+// ===== API ROUTES (in‑memory for testing) =====
+let orders = [];
 
-  app.post('/api/orders', async (req, res) => {
-    const { id, items, subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status } = req.body;
-    try {
-      await pool.query(
-        `INSERT INTO orders (id, items, subtotal, delivery_cost, total, delivery, customer_name, whatsapp, timestamp, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [id, JSON.stringify(items), subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status || 'pending']
-      );
-      res.status(201).json({ success: true });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Database error' });
-    }
-  });
+app.get('/api/orders', (req, res) => {
+  res.json(orders);
+});
 
-  app.patch('/api/orders/:id', async (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    try {
-      await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id]);
-      res.json({ success: true });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Database error' });
-    }
-  });
-}
+app.post('/api/orders', (req, res) => {
+  const order = req.body;
+  orders.unshift(order);
+  res.status(201).json({ success: true });
+});
 
-// ===== CATCH‑ALL: serve index.html for SPA routes =====
+app.patch('/api/orders/:id', (req, res) => {
+  const { id } = req.params;
+  const order = orders.find(o => o.id === id);
+  if (order) {
+    order.status = req.body.status;
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Order not found' });
+  }
+});
+
+// ===== CATCH‑ALL =====
 app.get('*', (req, res) => {
-  // If it looks like a static file request, return 404
   if (req.path.includes('.') && !req.path.includes('.html')) {
     return res.status(404).send('File not found');
   }
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(rootDir, 'index.html'));
 });
 
 // ===== EXPORT FOR VERCEL =====
