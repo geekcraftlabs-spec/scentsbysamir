@@ -37,11 +37,13 @@ function openCheckout() {
     return;
   }
   document.getElementById('checkout-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden'; // Prevent background scroll
   updateCheckoutSummary();
 }
 
 function closeCheckout() {
   document.getElementById('checkout-overlay').style.display = 'none';
+  document.body.style.overflow = ''; // Restore scroll
 }
 
 function updateCheckoutSummary() {
@@ -93,13 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function formatWhatsAppNumber(number) {
-  // Remove spaces, dashes, parentheses, and plus signs
   let cleaned = number.replace(/[\s\-\(\)\+]/g, '');
-  // If it starts with 0, replace with 27
   if (cleaned.startsWith('0')) {
     cleaned = '27' + cleaned.slice(1);
   }
-  // If it doesn't start with 27 and length <= 10, add 27
   if (!cleaned.startsWith('27') && cleaned.length <= 10) {
     cleaned = '27' + cleaned;
   }
@@ -108,10 +107,8 @@ function formatWhatsAppNumber(number) {
 
 function placeOrder() {
   const name = document.getElementById('cust-name').value.trim();
-  // Get the input values (user enters only after +27)
   const wa1 = document.getElementById('wa-1').value.trim();
   const wa2 = document.getElementById('wa-2').value.trim();
-
   const deliverySelect = document.getElementById('delivery-method');
   const deliveryCost = deliverySelect ? parseFloat(deliverySelect.value) || 0 : 0;
   const deliveryName = deliverySelect ? deliverySelect.options[deliverySelect.selectedIndex].text : '';
@@ -126,7 +123,6 @@ function placeOrder() {
   }
   document.getElementById('wa-error').style.display = 'none';
 
-  // Combine +27 prefix with the entered number
   const fullNumber = '+27' + wa1.replace(/\s/g, '');
   const formattedWhatsApp = formatWhatsAppNumber(fullNumber);
 
@@ -146,7 +142,6 @@ function placeOrder() {
     status: 'pending'
   };
 
-  // Send to API
   fetch('/api/orders', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
