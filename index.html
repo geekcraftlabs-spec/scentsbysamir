@@ -174,12 +174,18 @@
         <option value="130">Fastway Express (R130, 1-2 days)</option>
       </select>
 
+      <!-- ===== WHATSAPP INPUT WITH +27 PREFIX ===== -->
       <label>WhatsApp Number</label>
-      <div class="double-input">
-        <input type="tel" id="wa-1" placeholder="+27 82 123 4567">
-        <input type="tel" id="wa-2" placeholder="Confirm">
+      <div style="display:flex; align-items:center; background:rgba(255,255,255,0.05); border:1px solid #2a2744; border-radius:16px; overflow:hidden;">
+        <span style="padding:0 12px; color:var(--text-secondary); font-weight:600; background:rgba(255,255,255,0.05); height:100%; display:flex; align-items:center; font-size:15px;">+27</span>
+        <input type="tel" id="wa-1" placeholder="82 123 4567" style="border:none; border-radius:0; flex:1; background:transparent; padding:14px 16px; color:white; font-size:15px; outline:none;">
+      </div>
+      <div style="display:flex; align-items:center; background:rgba(255,255,255,0.05); border:1px solid #2a2744; border-radius:16px; overflow:hidden; margin-top:4px;">
+        <span style="padding:0 12px; color:var(--text-secondary); font-weight:600; background:rgba(255,255,255,0.05); height:100%; display:flex; align-items:center; font-size:15px;">+27</span>
+        <input type="tel" id="wa-2" placeholder="82 123 4567" style="border:none; border-radius:0; flex:1; background:transparent; padding:14px 16px; color:white; font-size:15px; outline:none;">
       </div>
       <div id="wa-error">❗ Numbers do not match.</div>
+
       <button class="btn-primary" onclick="placeOrder()">Place Order</button>
       <button class="btn-secondary" onclick="closeCheckout()">Cancel</button>
     </div>

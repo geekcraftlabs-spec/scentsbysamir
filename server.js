@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const { Pool } = require('pg');
 const app = express();
 
 // ===== LOGGING =====
@@ -11,20 +12,40 @@ app.use((req, res, next) => {
 // ===== MIDDLEWARE =====
 app.use(express.json());
 
-// ===== STATIC FILE SERVING – EXPLICIT PATHS =====
+// ===== STATIC FILES =====
 const rootDir = path.resolve('.');
-console.log('📁 Root directory:', rootDir);
-
-// Serve static files from the root directory
 app.use(express.static(rootDir));
-
-// Explicitly map common asset folders
 app.use('/css', express.static(path.join(rootDir, 'css')));
 app.use('/js', express.static(path.join(rootDir, 'js')));
 app.use('/images', express.static(path.join(rootDir, 'images')));
 
-// Fallback: try parent directory (Vercel sometimes puts files one level up)
-app.use(express.static(path.resolve(rootDir, '..')));
+// ===== DATABASE =====
+let pool;
+const dbUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+if (dbUrl) {
+  pool = new Pool({
+    connectionString: dbUrl,
+    ssl: { rejectUnauthorized: false }
+  });
+  // Create orders table if not exists
+  pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id VARCHAR(20) PRIMARY KEY,
+      items JSONB NOT NULL,
+      subtotal DECIMAL(10,2) NOT NULL,
+      delivery_cost DECIMAL(10,2) NOT NULL,
+      total DECIMAL(10,2) NOT NULL,
+      delivery VARCHAR(100) NOT NULL,
+      customer_name VARCHAR(100) NOT NULL,
+      whatsapp VARCHAR(20) NOT NULL,
+      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      status VARCHAR(20) DEFAULT 'pending'
+    );
+  `).catch(err => console.error('Table creation error:', err));
+  console.log('✅ PostgreSQL connected');
+} else {
+  console.log('⚠️ No DATABASE_URL – using in‑memory fallback');
+}
 
 // ===== HTML ROUTES =====
 app.get('/', (req, res) => {
@@ -44,11 +65,26 @@ app.get('/login.html', (req, res) => {
 });
 
 // ===== PRODUCT DATA =====
+// This should match js/products.js; we keep a copy here for the dynamic page
 const products = [
-  // ... (keep your product list as before)
+  { id: 'asad', name: 'Lattafa Asad Bourbon', price: 650, category: 'men', brand: 'lattafa', image: 'asad-bourbon.webp', description: 'Spicy, woody, and amber – bold and masculine.' },
+  { id: 'club-de-nuit', name: 'Armaaf Club de Nuit Intense', price: 1000, category: 'men', brand: 'armaaf', image: 'CLUB-DE-NUIT-INTENSE-MAN.webp', description: 'A masterpiece of fresh, smoky, and woody accords – iconic and long-lasting.' },
+  { id: '9pm', name: 'Afnan 9pm', price: 850, category: 'men', brand: 'afnan', image: '9pm.webp', description: 'Oriental vanilla with a playful twist – sweet, warm, and addictive.' },
+  { id: 'ramz-silver', name: 'Lattafa Ramz Silver', price: 550, category: 'men', brand: 'lattafa', image: 'RAMZ-SILVER.webp', description: 'Fresh aquatic lavender with a modern, versatile character – perfect for daily wear.' },
+  { id: 'al-qiam-gold', name: 'Lattafa Al Qiam Gold', price: 750, category: 'men', brand: 'lattafa', image: 'AL-QIAM-GOLD.webp', description: 'A regal fusion of oud, saffron, and amber – opulent and commanding.' },
+  { id: 'yara', name: 'Lattafa Yara', price: 650, category: 'women', brand: 'lattafa', image: 'YARA-PINK-1273x1536.webp', description: 'Soft, floral, and creamy – a gentle embrace of feminine elegance.' },
+  { id: 'coral', name: 'Lattafa Ana Abiyedh Coral', price: 550, category: 'women', brand: 'lattafa', image: 'ANA-ABIYEDH-CORAL.webp', description: 'Tropical fruits, vanilla, and musk – sweet, playful, and unforgettable.' },
+  { id: 'eclaire', name: 'Lattafa Eclaire', price: 650, category: 'women', brand: 'lattafa', image: 'ECLAIRE.webp', description: 'Gourmand vanilla and caramel – a deliciously addictive scent.' },
+  { id: 'delilah', name: 'Maison Alhambra Delilah', price: 550, category: 'women', brand: 'fragrance-deluxe', image: 'DELILAH.webp', description: 'A floral fruity bouquet – modern, bright, and effortlessly charming.' },
+  { id: 'pink-velvet', name: 'Maison Alhambra Pink Velvet', price: 700, category: 'women', brand: 'fragrance-deluxe', image: 'DSC7500-1300x1536.jpg', description: 'Chypre floral with a velvety smoothness – luxurious and timeless.' },
+  { id: 'khamrah', name: 'Lattafa Khamrah Dukhan', price: 800, category: 'unisex', brand: 'lattafa', image: 'KHAMRAH-DUKHAN.webp', description: 'Gourmand dates, cinnamon, and praline – warm, cozy, and addictive.' },
+  { id: 'ajwad', name: 'Lattafa Ajwad', price: 650, category: 'unisex', brand: 'lattafa', image: 'Ajwad.webp', description: 'Woody aromatic with a fresh, green twist – sophisticated and versatile.' },
+  { id: 'ameerat', name: 'Asdaaf Ameerat Al Arab', price: 550, category: 'unisex', brand: 'fragrance-world', image: 'Ameerat-Al-Arab.webp', description: 'An oriental floral blend – rich, exotic, and deeply captivating.' },
+  { id: '9am-dive', name: 'Afnan 9am Dive', price: 1100, category: 'unisex', brand: 'afnan', image: '9-AM-DIVE.webp', description: 'Aromatic aquatic with a burst of citrus – refreshing and energising.' },
+  { id: 'afeef', name: 'Lattafa Afeef', price: 950, category: 'unisex', brand: 'lattafa', image: 'Afeef.webp', description: 'A sophisticated blend of rose, amber, and musk – refined and elegant.' }
 ];
 
-// ===== PRODUCT DETAIL =====
+// ===== PRODUCT DETAIL PAGE (with OG meta tags) =====
 app.get('/product-detail.html', (req, res) => {
   const productId = req.query.id;
   const product = products.find(p => p.id === productId);
@@ -110,27 +146,76 @@ app.get('/product-detail.html', (req, res) => {
   res.send(html);
 });
 
-// ===== API ROUTES (in‑memory for testing) =====
-let orders = [];
+// ===== API ROUTES =====
+// In‑memory fallback (used if no DB)
+let memoryOrders = [];
 
-app.get('/api/orders', (req, res) => {
-  res.json(orders);
+const getOrders = async () => {
+  if (pool) {
+    const result = await pool.query('SELECT * FROM orders ORDER BY timestamp DESC');
+    return result.rows;
+  }
+  return memoryOrders;
+};
+
+const insertOrder = async (order) => {
+  if (pool) {
+    const { id, items, subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status } = order;
+    await pool.query(
+      `INSERT INTO orders (id, items, subtotal, delivery_cost, total, delivery, customer_name, whatsapp, timestamp, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [id, JSON.stringify(items), subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status || 'pending']
+    );
+    return true;
+  }
+  memoryOrders.unshift(order);
+  return true;
+};
+
+const updateOrderStatus = async (id, status) => {
+  if (pool) {
+    await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id]);
+    return true;
+  }
+  const order = memoryOrders.find(o => o.id === id);
+  if (order) { order.status = status; return true; }
+  return false;
+};
+
+// API endpoints
+app.get('/api/orders', async (req, res) => {
+  try {
+    const orders = await getOrders();
+    res.json(orders);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-app.post('/api/orders', (req, res) => {
-  const order = req.body;
-  orders.unshift(order);
-  res.status(201).json({ success: true });
+app.post('/api/orders', async (req, res) => {
+  try {
+    await insertOrder(req.body);
+    res.status(201).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-app.patch('/api/orders/:id', (req, res) => {
-  const { id } = req.params;
-  const order = orders.find(o => o.id === id);
-  if (order) {
-    order.status = req.body.status;
-    res.json({ success: true });
-  } else {
-    res.status(404).json({ error: 'Order not found' });
+app.patch('/api/orders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const success = await updateOrderStatus(id, status);
+    if (success) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Order not found' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
   }
 });
 
@@ -142,5 +227,5 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(rootDir, 'index.html'));
 });
 
-// ===== EXPORT FOR VERCEL =====
+// ===== EXPORT =====
 module.exports = app;

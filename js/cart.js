@@ -1,21 +1,6 @@
 // ===== CART =====
 let cart = JSON.parse(localStorage.getItem('cart') || '[]');
 
-function formatWhatsAppNumber(number) {
-  // Remove all spaces, dashes, parentheses, and plus signs
-  let cleaned = number.replace(/[\s\-\(\)\+]/g, '');
-  // If it starts with '0', replace with '27' (South Africa country code)
-  if (cleaned.startsWith('0')) {
-    cleaned = '27' + cleaned.slice(1);
-  }
-  // If it doesn't start with '27' and doesn't start with a country code (like 1-9),
-  // assume it's a local number and add '27'
-  if (!cleaned.startsWith('27') && cleaned.length <= 10) {
-    cleaned = '27' + cleaned;
-  }
-  return cleaned;
-}
-
 function updateCartUI() {
   const count = cart.length;
   const el = document.getElementById('cart-count');
@@ -107,10 +92,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+function formatWhatsAppNumber(number) {
+  // Remove spaces, dashes, parentheses, and plus signs
+  let cleaned = number.replace(/[\s\-\(\)\+]/g, '');
+  // If it starts with 0, replace with 27
+  if (cleaned.startsWith('0')) {
+    cleaned = '27' + cleaned.slice(1);
+  }
+  // If it doesn't start with 27 and length <= 10, add 27
+  if (!cleaned.startsWith('27') && cleaned.length <= 10) {
+    cleaned = '27' + cleaned;
+  }
+  return cleaned;
+}
+
 function placeOrder() {
   const name = document.getElementById('cust-name').value.trim();
+  // Get the input values (user enters only after +27)
   const wa1 = document.getElementById('wa-1').value.trim();
   const wa2 = document.getElementById('wa-2').value.trim();
+
   const deliverySelect = document.getElementById('delivery-method');
   const deliveryCost = deliverySelect ? parseFloat(deliverySelect.value) || 0 : 0;
   const deliveryName = deliverySelect ? deliverySelect.options[deliverySelect.selectedIndex].text : '';
@@ -125,8 +126,9 @@ function placeOrder() {
   }
   document.getElementById('wa-error').style.display = 'none';
 
-  // Format the WhatsApp number
-  const formattedWhatsApp = formatWhatsAppNumber(wa1);
+  // Combine +27 prefix with the entered number
+  const fullNumber = '+27' + wa1.replace(/\s/g, '');
+  const formattedWhatsApp = formatWhatsAppNumber(fullNumber);
 
   const items = cart.map(id => products.find(p => p.id === id)).filter(Boolean);
   const subtotal = items.reduce((sum, p) => sum + (parseFloat(p.price) || 0), 0);
@@ -139,20 +141,33 @@ function placeOrder() {
     total: subtotal + deliveryCost,
     delivery: deliveryName,
     customerName: name,
-    whatsapp: formattedWhatsApp, // store formatted
+    whatsapp: formattedWhatsApp,
     timestamp: new Date().toISOString(),
     status: 'pending'
   };
 
-  const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-  orders.unshift(order);
-  localStorage.setItem('orders', JSON.stringify(orders));
-
-  cart = [];
-  localStorage.setItem('cart', JSON.stringify(cart));
-  updateCartUI();
-  closeCheckout();
-  alert('✅ Order placed! View it in the Dashboard.');
+  // Send to API
+  fetch('/api/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(order)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      cart = [];
+      localStorage.setItem('cart', JSON.stringify(cart));
+      updateCartUI();
+      closeCheckout();
+      alert('✅ Order placed!');
+    } else {
+      alert('❌ Failed to place order. Please try again.');
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert('❌ Network error. Please try again.');
+  });
 }
 
 updateCartUI();
