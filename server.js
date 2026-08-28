@@ -1,37 +1,69 @@
 const express = require('express');
 const path = require('path');
+const { Pool } = require('pg');
 const app = express();
-const PORT = 3000;
 
-// Serve all static files
+// ===== DATABASE CONNECTION =====
+// Vercel sets process.env.POSTGRES_URL automatically when Neon is integrated
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
+// Create orders table if not exists
+pool.query(`
+  CREATE TABLE IF NOT EXISTS orders (
+    id VARCHAR(20) PRIMARY KEY,
+    items JSONB NOT NULL,
+    subtotal DECIMAL(10,2) NOT NULL,
+    delivery_cost DECIMAL(10,2) NOT NULL,
+    total DECIMAL(10,2) NOT NULL,
+    delivery VARCHAR(100) NOT NULL,
+    customer_name VARCHAR(100) NOT NULL,
+    whatsapp VARCHAR(20) NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'pending'
+  );
+`).catch(err => console.error('Table creation error:', err));
+
+// ===== MIDDLEWARE =====
+app.use(express.json());
+
+// Serve static files (CSS, JS, images, HTML)
 app.use(express.static(path.join(__dirname)));
 
-// Product data (copy from your products.js – keep in sync)
+// ===== HANDLE ROOT ROUTE =====
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ===== PRODUCT DATA (same as products.js – keep in sync) =====
 const products = [
-  { id: 'asad', name: 'Lattafa Asad Bourbon', price: 650, category: 'men', image: 'asad-bourbon.webp' },
-  { id: 'club-de-nuit', name: 'Armaaf Club de Nuit Intense', price: 1000, category: 'men', image: 'club-de-nuit-intense-man.webp' },
-  { id: '9pm', name: 'Afnan 9pm', price: 850, category: 'men', image: '9pm.webp' },
-  { id: 'ramz-silver', name: 'Lattafa Ramz Silver', price: 550, category: 'men', image: 'ramz-silver.webp' },
-  { id: 'oud-glory', name: 'Lattafa Oud for Glory', price: 750, category: 'men', image: 'oud-for-glory.webp' },
-  { id: 'yara', name: 'Lattafa Yara', price: 650, category: 'women', image: 'yara.webp' },
-  { id: 'coral', name: 'Lattafa Ana Abiyedh Coral', price: 550, category: 'women', image: 'ana-abiyedh-coral.webp' },
-  { id: 'eclaire', name: 'Lattafa Eclaire', price: 650, category: 'women', image: 'eclaire.webp' },
-  { id: 'delilah', name: 'Maison Alhambra Delilah', price: 550, category: 'women', image: 'delilah.webp' },
-  { id: 'pink-velvet', name: 'Maison Alhambra Pink Velvet', price: 700, category: 'women', image: 'pink-velvet.webp' },
-  { id: 'khamrah', name: 'Lattafa Khamrah', price: 800, category: 'unisex', image: 'khamrah.webp' },
-  { id: 'ajwad', name: 'Lattafa Ajwad', price: 650, category: 'unisex', image: 'ajwad.webp' },
-  { id: 'ameerat', name: 'Asdaaf Ameerat Al Arab', price: 550, category: 'unisex', image: 'ameerat-al-arab.webp' },
-  { id: '9am-dive', name: 'Afnan 9am Dive', price: 1100, category: 'unisex', image: '9am-dive.webp' },
-  { id: 'afeef', name: 'Lattafa Afeef', price: 950, category: 'unisex', image: 'afeef.webp' },
+  { id: 'asad', name: 'Lattafa Asad Bourbon', price: 650, category: 'men', brand: 'lattafa', image: 'asad-bourbon.webp', description: 'Spicy, woody, and amber – bold and masculine.' },
+  { id: 'club-de-nuit', name: 'Armaaf Club de Nuit Intense', price: 1000, category: 'men', brand: 'armaaf', image: 'CLUB-DE-NUIT-INTENSE-MAN.webp', description: 'A masterpiece of fresh, smoky, and woody accords – iconic and long-lasting.' },
+  { id: '9pm', name: 'Afnan 9pm', price: 850, category: 'men', brand: 'afnan', image: '9pm.webp', description: 'Oriental vanilla with a playful twist – sweet, warm, and addictive.' },
+  { id: 'ramz-silver', name: 'Lattafa Ramz Silver', price: 550, category: 'men', brand: 'lattafa', image: 'RAMZ-SILVER.webp', description: 'Fresh aquatic lavender with a modern, versatile character – perfect for daily wear.' },
+  { id: 'al-qiam-gold', name: 'Lattafa Al Qiam Gold', price: 750, category: 'men', brand: 'lattafa', image: 'AL-QIAM-GOLD.webp', description: 'A regal fusion of oud, saffron, and amber – opulent and commanding.' },
+  { id: 'yara', name: 'Lattafa Yara', price: 650, category: 'women', brand: 'lattafa', image: 'YARA-PINK-1273x1536.webp', description: 'Soft, floral, and creamy – a gentle embrace of feminine elegance.' },
+  { id: 'coral', name: 'Lattafa Ana Abiyedh Coral', price: 550, category: 'women', brand: 'lattafa', image: 'ANA-ABIYEDH-CORAL.webp', description: 'Tropical fruits, vanilla, and musk – sweet, playful, and unforgettable.' },
+  { id: 'eclaire', name: 'Lattafa Eclaire', price: 650, category: 'women', brand: 'lattafa', image: 'ECLAIRE.webp', description: 'Gourmand vanilla and caramel – a deliciously addictive scent.' },
+  { id: 'delilah', name: 'Maison Alhambra Delilah', price: 550, category: 'women', brand: 'fragrance-deluxe', image: 'DELILAH.webp', description: 'A floral fruity bouquet – modern, bright, and effortlessly charming.' },
+  { id: 'pink-velvet', name: 'Maison Alhambra Pink Velvet', price: 700, category: 'women', brand: 'fragrance-deluxe', image: 'DSC7500-1300x1536.jpg', description: 'Chypre floral with a velvety smoothness – luxurious and timeless.' },
+  { id: 'khamrah', name: 'Lattafa Khamrah Dukhan', price: 800, category: 'unisex', brand: 'lattafa', image: 'KHAMRAH-DUKHAN.webp', description: 'Gourmand dates, cinnamon, and praline – warm, cozy, and addictive.' },
+  { id: 'ajwad', name: 'Lattafa Ajwad', price: 650, category: 'unisex', brand: 'lattafa', image: 'Ajwad.webp', description: 'Woody aromatic with a fresh, green twist – sophisticated and versatile.' },
+  { id: 'ameerat', name: 'Asdaaf Ameerat Al Arab', price: 550, category: 'unisex', brand: 'fragrance-world', image: 'Ameerat-Al-Arab.webp', description: 'An oriental floral blend – rich, exotic, and deeply captivating.' },
+  { id: '9am-dive', name: 'Afnan 9am Dive', price: 1100, category: 'unisex', brand: 'afnan', image: '9-AM-DIVE.webp', description: 'Aromatic aquatic with a burst of citrus – refreshing and energising.' },
+  { id: 'afeef', name: 'Lattafa Afeef', price: 950, category: 'unisex', brand: 'lattafa', image: 'Afeef.webp', description: 'A sophisticated blend of rose, amber, and musk – refined and elegant.' }
 ];
 
-// Dynamic product detail with OG meta tags
+// ===== DYNAMIC PRODUCT DETAIL PAGE (with OG meta tags) =====
 app.get('/product-detail.html', (req, res) => {
   const productId = req.query.id;
   const product = products.find(p => p.id === productId);
   if (!product) return res.status(404).send('Product not found');
 
-  const baseUrl = `http://${req.get('host')}`;
+  // Use the live URL from environment or fallback to localhost
+  const baseUrl = process.env.BASE_URL || `https://${req.get('host')}`;
   const imageUrl = `${baseUrl}/images/products/${product.image}`;
   const pageUrl = `${baseUrl}/product-detail.html?id=${product.id}`;
 
@@ -43,7 +75,7 @@ app.get('/product-detail.html', (req, res) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${product.name} – Scents by Samir</title>
   <meta property="og:title" content="${product.name} – Scents by Samir" />
-  <meta property="og:description" content="${product.name} – a luxurious fragrance from our collection." />
+  <meta property="og:description" content="${product.description}" />
   <meta property="og:image" content="${imageUrl}" />
   <meta property="og:url" content="${pageUrl}" />
   <meta property="og:type" content="product" />
@@ -69,7 +101,7 @@ app.get('/product-detail.html', (req, res) => {
         <span style="background: rgba(124,58,237,0.2); padding: 4px 14px; border-radius: 40px; font-size: 12px; text-transform: uppercase; color: #a78bfa;">${product.category}</span>
         <h1>${product.name}</h1>
         <div class="price">R${product.price.toFixed(2)}</div>
-        <p>${product.name} – a sophisticated fragrance that leaves a lasting impression. Perfect for any occasion.</p>
+        <p>${product.description}</p>
         <button class="btn-primary" onclick="addToCart('${product.id}')">Add to Cart</button>
         <br>
         <button class="btn-primary" style="background: #10b981; box-shadow: 0 4px 14px rgba(16,185,129,0.4);" onclick="buyNow('${product.id}')">Buy Now</button>
@@ -87,8 +119,47 @@ app.get('/product-detail.html', (req, res) => {
   res.send(html);
 });
 
-// Listen on all network interfaces
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📱 Access from phone: http://<YOUR_IP>:${PORT}`);
+// ===== API ENDPOINTS =====
+
+// GET all orders
+app.get('/api/orders', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM orders ORDER BY timestamp DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
+
+// POST a new order
+app.post('/api/orders', async (req, res) => {
+  const { id, items, subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status } = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO orders (id, items, subtotal, delivery_cost, total, delivery, customer_name, whatsapp, timestamp, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [id, JSON.stringify(items), subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status || 'pending']
+    );
+    res.status(201).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// PATCH update order status
+app.patch('/api/orders/:id', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  try {
+    await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
+// ===== EXPORT FOR VERCEL =====
+module.exports = app;
