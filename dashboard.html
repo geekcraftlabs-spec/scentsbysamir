@@ -206,6 +206,14 @@
       color: var(--text-secondary);
       font-size: 18px;
     }
+    .db-status {
+      font-size: 13px;
+      padding: 4px 14px;
+      border-radius: 40px;
+      display: inline-block;
+    }
+    .db-status.connected { background: #10b981; color: white; }
+    .db-status.error { background: #ef4444; color: white; }
 
     @media (max-width: 768px) {
       .dash-table-wrapper { display: none; }
@@ -279,6 +287,7 @@
       <div class="dash-header-actions">
         <a href="index.html">← Home</a>
         <a href="#" class="logout-link" onclick="logout()">🚪 Logout</a>
+        <span id="db-status" class="db-status">⏳ Connecting...</span>
       </div>
     </div>
 
@@ -370,24 +379,32 @@
 
     // ===== FETCH ORDERS FROM API =====
     function fetchOrders() {
-      fetch('/api/orders')
-        .then(res => res.json())
+      fetch('/api/orders', {
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          return res.json();
+        })
         .then(data => {
           allOrders = data;
+          document.getElementById('db-status').textContent = '✅ Connected';
+          document.getElementById('db-status').className = 'db-status connected';
           updateStats();
           updateFilterCounts();
           renderOrders();
         })
         .catch(err => {
           console.error('Error fetching orders:', err);
-          // Fallback: try localStorage
-          const fallback = JSON.parse(localStorage.getItem('orders') || '[]');
-          if (fallback.length > 0) {
-            allOrders = fallback;
-            updateStats();
-            updateFilterCounts();
-            renderOrders();
-          }
+          document.getElementById('db-status').textContent = '❌ Error: ' + err.message;
+          document.getElementById('db-status').className = 'db-status error';
+          // Show empty state
+          allOrders = [];
+          updateStats();
+          updateFilterCounts();
+          renderOrders();
         });
     }
 

@@ -20,16 +20,16 @@ app.use('/js', express.static(path.join(rootDir, 'js')));
 app.use('/images', express.static(path.join(rootDir, 'images')));
 
 // ============================================================
-// DATABASE CONNECTION (with retry and promise)
+// DATABASE – Synchronous initialization
 // ============================================================
 let pool = null;
 let dbReady = false;
 const dbUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
 
-// Function to connect and create table
+// This function runs ONCE when the server starts
 async function initDatabase() {
   if (!dbUrl) {
-    console.log('⚠️ No DATABASE_URL – using in‑memory fallback');
+    console.error('❌ No DATABASE_URL – database not available');
     dbReady = false;
     return;
   }
@@ -39,7 +39,7 @@ async function initDatabase() {
     pool = new Pool({
       connectionString: dbUrl,
       ssl: { rejectUnauthorized: false },
-      max: 1,
+      max: 1, // Vercel serverless: one connection per instance
       idleTimeoutMillis: 0,
     });
 
@@ -67,27 +67,9 @@ async function initDatabase() {
   } catch (err) {
     console.error('❌ Database init failed:', err.message);
     console.error('Full error:', err);
-    pool = null;
     dbReady = false;
+    pool = null;
   }
-}
-
-// Wait for database to be ready (with timeout)
-async function waitForDb(timeout = 5000) {
-  if (dbReady) return true;
-  if (!pool) return false;
-
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    try {
-      await pool.query('SELECT 1');
-      dbReady = true;
-      return true;
-    } catch (e) {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-  }
-  return false;
 }
 
 // ============================================================
@@ -195,113 +177,60 @@ app.get('/product-detail.html', (req, res) => {
 });
 
 // ============================================================
-// API ROUTES (with DB retry)
+// API ROUTES – No in‑memory fallback
 // ============================================================
-let memoryOrders = [];
 
-const getOrders = async () => {
-  // Always try DB first
-  if (pool) {
-    try {
-      const result = await pool.query('SELECT * FROM orders ORDER BY timestamp DESC');
-      console.log(`📊 Fetched ${result.rows.length} orders from DB`);
-      return result.rows;
-    } catch (err) {
-      console.error('❌ DB query error:', err.message);
-    }
-  }
-  console.log(`📊 Fetched ${memoryOrders.length} orders from memory`);
-  return memoryOrders;
-};
-
-const insertOrder = async (order) => {
-  // Always try DB first if pool exists
-  if (pool) {
-    try {
-      const { id, items, subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status } = order;
-      // Test connection first
-      await pool.query('SELECT 1');
-      console.log('✅ DB connection alive, inserting...');
-      await pool.query(
-        `INSERT INTO orders (id, items, subtotal, delivery_cost, total, delivery, customer_name, whatsapp, timestamp, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [id, JSON.stringify(items), subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status || 'pending']
-      );
-      console.log(`✅ Order ${id} inserted into DB`);
-      return true;
-    } catch (err) {
-      console.error('❌ DB insert failed:', err.message);
-      console.error('Full error:', err);
-      // fallback to memory
-    }
-  } else {
-    console.log('⚠️ No DB pool, using memory');
-  }
-
-  // Fallback
-  memoryOrders.unshift(order);
-  console.log(`📦 Order ${order.id} stored in memory (fallback)`);
-  return true;
-};
-
-const updateOrderStatus = async (id, status) => {
-  if (pool) {
-    try {
-      await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id]);
-      console.log(`✅ Order ${id} updated to ${status}`);
-      return true;
-    } catch (err) {
-      console.error('❌ DB update failed:', err.message);
-    }
-  }
-  const order = memoryOrders.find(o => o.id === id);
-  if (order) { order.status = status; return true; }
-  return false;
-};
-
-// ===== API ENDPOINTS =====
+// GET all orders
 app.get('/api/orders', async (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  if (!dbReady || !pool) {
+    return res.status(503).json({ error: 'Database not ready' });
+  }
   try {
-    const orders = await getOrders();
-    res.json(orders);
+    const result = await pool.query('SELECT * FROM orders ORDER BY timestamp DESC');
+    res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('❌ DB query error:', err.message);
     res.status(500).json({ error: 'Database error' });
   }
 });
 
+// POST new order
 app.post('/api/orders', async (req, res) => {
+  if (!dbReady || !pool) {
+    return res.status(503).json({ error: 'Database not ready' });
+  }
   try {
-    await insertOrder(req.body);
+    const { id, items, subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status } = req.body;
+    await pool.query(
+      `INSERT INTO orders (id, items, subtotal, delivery_cost, total, delivery, customer_name, whatsapp, timestamp, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [id, JSON.stringify(items), subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status || 'pending']
+    );
+    console.log(`✅ Order ${id} inserted into DB`);
     res.status(201).json({ success: true });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database error' });
+    console.error('❌ DB insert error:', err.message);
+    console.error('Full error:', err);
+    res.status(500).json({ error: 'Database error', message: err.message });
   }
 });
 
+// PATCH update status
 app.patch('/api/orders/:id', async (req, res) => {
+  if (!dbReady || !pool) {
+    return res.status(503).json({ error: 'Database not ready' });
+  }
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const success = await updateOrderStatus(id, status);
-    if (success) {
-      res.json({ success: true });
-    } else {
-      res.status(404).json({ error: 'Order not found' });
-    }
+    await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id]);
+    console.log(`✅ Order ${id} updated to ${status}`);
+    res.json({ success: true });
   } catch (err) {
-    console.error(err);
+    console.error('❌ DB update error:', err.message);
     res.status(500).json({ error: 'Database error' });
   }
-});
-
-// ============================================================
-// STARTUP: Initialize Database
-// ============================================================
-initDatabase().then(() => {
-  console.log('🚀 Server ready to handle requests');
 });
 
 // ============================================================
@@ -312,6 +241,22 @@ app.get('*', (req, res) => {
     return res.status(404).send('File not found');
   }
   res.sendFile(path.join(rootDir, 'index.html'));
+});
+
+// ============================================================
+// STARTUP – Wait for DB before listening
+// ============================================================
+let serverReady = false;
+
+async function startServer() {
+  await initDatabase();
+  serverReady = true;
+  console.log('🚀 Server ready to handle requests');
+}
+
+// Start the server only after DB is initialized
+startServer().catch(err => {
+  console.error('❌ Startup error:', err);
 });
 
 // ============================================================
