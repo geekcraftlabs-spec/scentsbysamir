@@ -20,56 +20,61 @@ app.use('/js', express.static(path.join(rootDir, 'js')));
 app.use('/images', express.static(path.join(rootDir, 'images')));
 
 // ============================================================
-// DATABASE – Synchronous initialization
+// DATABASE – LAZY INITIALIZATION (connect on first request)
 // ============================================================
 let pool = null;
 let dbReady = false;
+let initPromise = null;
 const dbUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
 
-// This function runs ONCE when the server starts
 async function initDatabase() {
-  if (!dbUrl) {
-    console.error('❌ No DATABASE_URL – database not available');
-    dbReady = false;
-    return;
-  }
+  if (initPromise) return initPromise;
+  if (dbReady && pool) return;
 
-  try {
-    console.log('📦 Connecting to PostgreSQL...');
-    pool = new Pool({
-      connectionString: dbUrl,
-      ssl: { rejectUnauthorized: false },
-      max: 1, // Vercel serverless: one connection per instance
-      idleTimeoutMillis: 0,
-    });
+  initPromise = (async () => {
+    if (!dbUrl) {
+      console.error('❌ No DATABASE_URL');
+      return;
+    }
+    try {
+      console.log('📦 Connecting to PostgreSQL...');
+      pool = new Pool({
+        connectionString: dbUrl,
+        ssl: { rejectUnauthorized: false },
+        max: 1,
+        idleTimeoutMillis: 0,
+      });
 
-    // Test connection
-    await pool.query('SELECT NOW()');
-    console.log('✅ PostgreSQL connected');
+      await pool.query('SELECT NOW()');
+      console.log('✅ PostgreSQL connected');
 
-    // Create table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS orders (
-        id VARCHAR(20) PRIMARY KEY,
-        items JSONB NOT NULL,
-        subtotal DECIMAL(10,2) NOT NULL,
-        delivery_cost DECIMAL(10,2) NOT NULL,
-        total DECIMAL(10,2) NOT NULL,
-        delivery VARCHAR(100) NOT NULL,
-        customer_name VARCHAR(100) NOT NULL,
-        whatsapp VARCHAR(20) NOT NULL,
-        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        status VARCHAR(20) DEFAULT 'pending'
-      );
-    `);
-    console.log('✅ Orders table ready');
-    dbReady = true;
-  } catch (err) {
-    console.error('❌ Database init failed:', err.message);
-    console.error('Full error:', err);
-    dbReady = false;
-    pool = null;
-  }
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS orders (
+          id VARCHAR(20) PRIMARY KEY,
+          items JSONB NOT NULL,
+          subtotal DECIMAL(10,2) NOT NULL,
+          delivery_cost DECIMAL(10,2) NOT NULL,
+          total DECIMAL(10,2) NOT NULL,
+          delivery VARCHAR(100) NOT NULL,
+          customer_name VARCHAR(100) NOT NULL,
+          whatsapp VARCHAR(20) NOT NULL,
+          timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          status VARCHAR(20) DEFAULT 'pending'
+        );
+      `);
+      console.log('✅ Orders table ready');
+      dbReady = true;
+    } catch (err) {
+      console.error('❌ Database init failed:', err.message);
+      pool = null;
+      dbReady = false;
+      throw err;
+    } finally {
+      initPromise = null;
+    }
+  })();
+
+  return initPromise;
 }
 
 // ============================================================
@@ -177,15 +182,28 @@ app.get('/product-detail.html', (req, res) => {
 });
 
 // ============================================================
-// API ROUTES – No in‑memory fallback
+// API ROUTES – with lazy DB initialization
 // ============================================================
 
-// GET all orders
-app.get('/api/orders', async (req, res) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-  if (!dbReady || !pool) {
-    return res.status(503).json({ error: 'Database not ready' });
+// Middleware to ensure database is ready
+async function ensureDb(req, res, next) {
+  try {
+    if (!dbReady) {
+      await initDatabase();
+    }
+    if (!dbReady) {
+      return res.status(503).json({ error: 'Database not available' });
+    }
+    next();
+  } catch (err) {
+    console.error('❌ Database init error:', err.message);
+    res.status(503).json({ error: 'Database connection failed' });
   }
+}
+
+// GET all orders
+app.get('/api/orders', ensureDb, async (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   try {
     const result = await pool.query('SELECT * FROM orders ORDER BY timestamp DESC');
     res.json(result.rows);
@@ -196,10 +214,7 @@ app.get('/api/orders', async (req, res) => {
 });
 
 // POST new order
-app.post('/api/orders', async (req, res) => {
-  if (!dbReady || !pool) {
-    return res.status(503).json({ error: 'Database not ready' });
-  }
+app.post('/api/orders', ensureDb, async (req, res) => {
   try {
     const { id, items, subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status } = req.body;
     await pool.query(
@@ -211,16 +226,12 @@ app.post('/api/orders', async (req, res) => {
     res.status(201).json({ success: true });
   } catch (err) {
     console.error('❌ DB insert error:', err.message);
-    console.error('Full error:', err);
-    res.status(500).json({ error: 'Database error', message: err.message });
+    res.status(500).json({ error: 'Database error' });
   }
 });
 
 // PATCH update status
-app.patch('/api/orders/:id', async (req, res) => {
-  if (!dbReady || !pool) {
-    return res.status(503).json({ error: 'Database not ready' });
-  }
+app.patch('/api/orders/:id', ensureDb, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -241,22 +252,6 @@ app.get('*', (req, res) => {
     return res.status(404).send('File not found');
   }
   res.sendFile(path.join(rootDir, 'index.html'));
-});
-
-// ============================================================
-// STARTUP – Wait for DB before listening
-// ============================================================
-let serverReady = false;
-
-async function startServer() {
-  await initDatabase();
-  serverReady = true;
-  console.log('🚀 Server ready to handle requests');
-}
-
-// Start the server only after DB is initialized
-startServer().catch(err => {
-  console.error('❌ Startup error:', err);
 });
 
 // ============================================================
