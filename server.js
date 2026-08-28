@@ -1,43 +1,51 @@
 const express = require('express');
 const path = require('path');
-const { Pool } = require('pg');
 const app = express();
 
-// ===== DATABASE CONNECTION =====
-// Vercel sets process.env.POSTGRES_URL automatically when Neon is integrated
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+// ===== DATABASE SETUP =====
+let pool = null;
+const isProduction = process.env.POSTGRES_URL || process.env.DATABASE_URL;
 
-// Create orders table if not exists
-pool.query(`
-  CREATE TABLE IF NOT EXISTS orders (
-    id VARCHAR(20) PRIMARY KEY,
-    items JSONB NOT NULL,
-    subtotal DECIMAL(10,2) NOT NULL,
-    delivery_cost DECIMAL(10,2) NOT NULL,
-    total DECIMAL(10,2) NOT NULL,
-    delivery VARCHAR(100) NOT NULL,
-    customer_name VARCHAR(100) NOT NULL,
-    whatsapp VARCHAR(20) NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status VARCHAR(20) DEFAULT 'pending'
-  );
-`).catch(err => console.error('Table creation error:', err));
+if (isProduction) {
+  const { Pool } = require('pg');
+  pool = new Pool({
+    connectionString: isProduction,
+    ssl: { rejectUnauthorized: false }
+  });
+
+  // Create orders table
+  pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id VARCHAR(20) PRIMARY KEY,
+      items JSONB NOT NULL,
+      subtotal DECIMAL(10,2) NOT NULL,
+      delivery_cost DECIMAL(10,2) NOT NULL,
+      total DECIMAL(10,2) NOT NULL,
+      delivery VARCHAR(100) NOT NULL,
+      customer_name VARCHAR(100) NOT NULL,
+      whatsapp VARCHAR(20) NOT NULL,
+      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      status VARCHAR(20) DEFAULT 'pending'
+    );
+  `).catch(err => console.error('Table creation error:', err));
+
+  console.log('✅ Connected to Neon PostgreSQL');
+} else {
+  console.log('⚠️ No database URL found – running in local demo mode (orders will not persist)');
+}
 
 // ===== MIDDLEWARE =====
 app.use(express.json());
 
-// Serve static files (CSS, JS, images, HTML)
+// ===== SERVE STATIC FILES =====
 app.use(express.static(path.join(__dirname)));
 
-// ===== HANDLE ROOT ROUTE =====
+// ===== ROUTES =====
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ===== PRODUCT DATA (same as products.js – keep in sync) =====
+// ===== PRODUCT DATA =====
 const products = [
   { id: 'asad', name: 'Lattafa Asad Bourbon', price: 650, category: 'men', brand: 'lattafa', image: 'asad-bourbon.webp', description: 'Spicy, woody, and amber – bold and masculine.' },
   { id: 'club-de-nuit', name: 'Armaaf Club de Nuit Intense', price: 1000, category: 'men', brand: 'armaaf', image: 'CLUB-DE-NUIT-INTENSE-MAN.webp', description: 'A masterpiece of fresh, smoky, and woody accords – iconic and long-lasting.' },
@@ -56,14 +64,13 @@ const products = [
   { id: 'afeef', name: 'Lattafa Afeef', price: 950, category: 'unisex', brand: 'lattafa', image: 'Afeef.webp', description: 'A sophisticated blend of rose, amber, and musk – refined and elegant.' }
 ];
 
-// ===== DYNAMIC PRODUCT DETAIL PAGE (with OG meta tags) =====
+// ===== DYNAMIC PRODUCT DETAIL PAGE =====
 app.get('/product-detail.html', (req, res) => {
   const productId = req.query.id;
   const product = products.find(p => p.id === productId);
   if (!product) return res.status(404).send('Product not found');
 
-  // Use the live URL from environment or fallback to localhost
-  const baseUrl = process.env.BASE_URL || `https://${req.get('host')}`;
+  const baseUrl = process.env.BASE_URL || `http://localhost:3000`;
   const imageUrl = `${baseUrl}/images/products/${product.image}`;
   const pageUrl = `${baseUrl}/product-detail.html?id=${product.id}`;
 
@@ -120,9 +127,18 @@ app.get('/product-detail.html', (req, res) => {
 });
 
 // ===== API ENDPOINTS =====
+// Helper: if DB is not available, return mock data or error
+const handleDb = (req, res, callback) => {
+  if (!pool) {
+    return res.status(500).json({ error: 'Database not available in local demo mode' });
+  }
+  callback(pool);
+};
 
-// GET all orders
 app.get('/api/orders', async (req, res) => {
+  if (!pool) {
+    return res.json([]); // return empty array in local demo
+  }
   try {
     const result = await pool.query('SELECT * FROM orders ORDER BY timestamp DESC');
     res.json(result.rows);
@@ -132,8 +148,10 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
-// POST a new order
 app.post('/api/orders', async (req, res) => {
+  if (!pool) {
+    return res.status(500).json({ error: 'Database not available in local demo mode' });
+  }
   const { id, items, subtotal, deliveryCost, total, delivery, customerName, whatsapp, timestamp, status } = req.body;
   try {
     await pool.query(
@@ -148,8 +166,10 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-// PATCH update order status
 app.patch('/api/orders/:id', async (req, res) => {
+  if (!pool) {
+    return res.status(500).json({ error: 'Database not available in local demo mode' });
+  }
   const { id } = req.params;
   const { status } = req.body;
   try {
@@ -159,6 +179,14 @@ app.patch('/api/orders/:id', async (req, res) => {
     console.error(err);
     res.status(500).json({ error: 'Database error' });
   }
+});
+
+// ===== CATCH-ALL: Serve index.html for any other route =====
+app.get('*', (req, res) => {
+  if (req.path.includes('.') && !req.path.includes('.html')) {
+    return res.status(404).send('File not found');
+  }
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // ===== EXPORT FOR VERCEL =====
