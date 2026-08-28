@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard – Scents by Samir</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { padding: 28px; background: #0b0a12; }
+    .dash-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .dash-header h1 {
+      font-size: 32px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #c084fc, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stats-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 14px 28px;
+      min-width: 100px;
+      text-align: center;
+    }
+    .stat-card .num {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--purple-light);
+      display: block;
+    }
+    .stat-card .label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .orders-container {
+      background: rgba(255,255,255,0.02);
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.05);
+      overflow: hidden;
+      padding: 0 4px 4px 4px;
+    }
+    .dash-table-wrapper {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+    th {
+      text-align: left;
+      padding: 18px 16px;
+      background: rgba(124,58,237,0.08);
+      color: var(--purple-light);
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .product-thumb {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      background: rgba(0,0,0,0.3);
+      border-radius: 12px;
+      padding: 4px;
+    }
+    .status-badge {
+      padding: 4px 16px;
+      border-radius: 40px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: #f59e0b;
+      color: #000;
+      display: inline-block;
+    }
+    .status-badge.contacted { background: #3b82f6; color: white; }
+    .status-badge.completed { background: #10b981; color: white; }
+    .make-order-btn {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      border: none;
+      color: white;
+      padding: 8px 22px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px rgba(16,185,129,0.25);
+      font-size: 13px;
+    }
+    .make-order-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 32px rgba(16,185,129,0.4);
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--text-secondary);
+      font-size: 18px;
+    }
+    .back-link, .logout-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: 0.2s;
+      font-weight: 500;
+      margin-left: 8px;
+    }
+    .back-link:hover, .logout-link:hover { color: white; }
+    .logout-link { color: #f87171; }
+    .logout-link:hover { color: #ef4444; }
+
+    @media (max-width: 768px) {
+      .dash-table-wrapper { display: none; }
+      .orders-container { background: transparent; border: none; padding: 0; }
+      .stats-row { width: 100%; justify-content: space-between; }
+    }
+    /* Mobile cards */
+    .dash-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .dash-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .dash-card .dash-card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .dash-card .label {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .dash-card .value {
+      font-weight: 600;
+    }
+    .dash-card .product-thumb {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.3);
+    }
+    @media (min-width: 769px) {
+      .dash-cards {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="dash-header">
+      <h1>📊 Admin Dashboard</h1>
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="num" id="total-orders">0</span>
+          <span class="label">Total Orders</span>
+        </div>
+        <div class="stat-card">
+          <span class="num" id="pending-orders">0</span>
+          <span class="label">Pending</span>
+        </div>
+        <a href="index.html" class="back-link">← Home</a>
+        <a href="#" class="logout-link" onclick="logout()">🚪 Logout</a>
+      </div>
+    </div>
+
+    <div class="orders-container">
+      <!-- Desktop: Table -->
+      <div class="dash-table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Product(s)</th>
+              <th>Client</th>
+              <th>WhatsApp</th>
+              <th>Delivery</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="orders-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Mobile: Cards -->
+      <div class="dash-cards" id="dash-cards"></div>
+    </div>
+  </div>
+
+  <script>
+    if (!localStorage.getItem('admin_logged_in')) {
+      window.location.href = 'login.html';
+    }
+
+    function logout() {
+      localStorage.removeItem('admin_logged_in');
+      window.location.href = 'login.html';
+    }
+
+    function renderOrders() {
+      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+      const tbody = document.getElementById('orders-body');
+      const cards = document.getElementById('dash-cards');
+
+      document.getElementById('total-orders').textContent = orders.length;
+      document.getElementById('pending-orders').textContent = orders.filter(o => o.status === 'pending').length;
+
+      if (orders.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">✨ No orders yet.</td></tr>`;
+        cards.innerHTML = `<div class="empty-state">✨ No orders yet.</div>`;
+        return;
+      }
+
+      // Table rows
+      tbody.innerHTML = orders.map((order, index) => {
+        const names = order.items.map(p => p.name).join(', ');
+        const firstImg = order.items[0]?.image || 'placeholder.webp';
+        let statusClass = '';
+        if (order.status === 'contacted') statusClass = 'contacted';
+        if (order.status === 'completed') statusClass = 'completed';
+
+        return `
+          <tr>
+            <td><img src="images/products/${firstImg}" class="product-thumb" alt="product"></td>
+            <td style="max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${names}</td>
+            <td>${order.customerName}</td>
+            <td>${order.whatsapp}</td>
+            <td>${order.delivery}</td>
+            <td><strong>R${order.total.toFixed(2)}</strong></td>
+            <td><span class="status-badge ${statusClass}">${order.status}</span></td>
+            <td><button class="make-order-btn" onclick="makeOrder('${order.id}')">📲 Make Order</button></td>
+          </tr>
+        `;
+      }).join('');
+
+      // Mobile cards
+      cards.innerHTML = orders.map((order, index) => {
+        const names = order.items.map(p => p.name).join(', ');
+        const firstImg = order.items[0]?.image || 'placeholder.webp';
+        let statusClass = '';
+        if (order.status === 'contacted') statusClass = 'contacted';
+        if (order.status === 'completed') statusClass = 'completed';
+
+        return `
+          <div class="dash-card">
+            <div class="dash-card-row">
+              <img src="images/products/${firstImg}" class="product-thumb" alt="product">
+              <span style="font-weight:600;">${names}</span>
+            </div>
+            <div class="dash-card-row">
+              <span class="label">Client</span>
+              <span class="value">${order.customerName}</span>
+            </div>
+            <div class="dash-card-row">
+              <span class="label">WhatsApp</span>
+              <span class="value">${order.whatsapp}</span>
+            </div>
+            <div class="dash-card-row">
+              <span class="label">Delivery</span>
+              <span class="value">${order.delivery}</span>
+            </div>
+            <div class="dash-card-row">
+              <span class="label">Total</span>
+              <span class="value" style="color:var(--purple-light);">R${order.total.toFixed(2)}</span>
+            </div>
+            <div class="dash-card-row">
+              <span class="label">Status</span>
+              <span class="status-badge ${statusClass}">${order.status}</span>
+            </div>
+            <button class="make-order-btn" style="width:100%;" onclick="makeOrder('${order.id}')">📲 Make Order</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function makeOrder(orderId) {
+      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      order.status = 'contacted';
+      localStorage.setItem('orders', JSON.stringify(orders));
+      renderOrders();
+
+      const product = order.items[0];
+      const productUrl = `http://localhost:3000/product-detail.html?id=${product.id}`;
+      const payShap = '069 566 9978';
+      const itemsList = order.items.map(p => p.name).join(' & ');
+
+      const message = 
+`Hi ${order.customerName}! 👋
+
+Thank you for your order of **${itemsList}**.
+
+💳 Please send **R${order.total.toFixed(2)}** via **PayShap** to:
+
+🔹 **PayShap: ${payShap}**  
+🔹 Ref: **${order.id}**
+
+After payment, reply with proof.
+
+👇 View your product (image will appear):
+${productUrl}
+
+We'll confirm once received.`;
+
+      const waLink = `https://wa.me/${order.whatsapp.replace(/\s/g, '')}?text=${encodeURIComponent(message)}`;
+      window.open(waLink, '_blank');
+    }
+
+    renderOrders();
+  </script>
+</body>
+</html>

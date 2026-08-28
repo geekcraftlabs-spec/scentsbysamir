@@ -1,0 +1,17 @@
+{
+  "name": "scents-by-samir",
+  "version": "1.0.0",
+  "description": "Luxury fragrance store with automated WhatsApp ordering",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.12.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

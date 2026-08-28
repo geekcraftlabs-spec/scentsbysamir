@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scents by Samir – Luxury Fragrances</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== MOBILE OFF-CANVAS MENU ===== -->
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="close-btn" onclick="closeMobileMenu()">✕</button>
+    <a href="index.html">🏠 Home</a>
+    <a href="shop.html">🛍️ Shop</a>
+    <a href="#">✨ About</a>
+    <a href="#">📬 Contact</a>
+    <a href="dashboard.html" target="_blank">📊 Dashboard</a>
+    <a href="#" class="mobile-cart-btn" onclick="openCheckout()">🛒 Cart (<span id="mobile-cart-count">0</span>)</a>
+  </div>
+
+  <div class="container">
+    <!-- ===== HEADER / NAVBAR ===== -->
+    <header class="navbar">
+      <div class="logo-group" onclick="window.location='index.html'">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="44" height="44">
+          <circle cx="50" cy="50" r="45" fill="#2c114f" />
+          <text x="50" y="58" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="white" text-anchor="middle">SM</text>
+        </svg>
+        <span class="logo-text">Scents by Samir</span>
+      </div>
+
+      <!-- Desktop Nav -->
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="shop.html">Shop</a></li>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Contact</a></li>
+        <li><a href="dashboard.html" target="_blank">Dashboard</a></li>
+        <li><button class="cart-btn" onclick="openCheckout()">🛒 <span class="cart-count" id="cart-count">0</span></button></li>
+      </ul>
+
+      <!-- Mobile Hamburger -->
+      <div class="hamburger" id="hamburger" onclick="toggleMobileMenu()">
+        <span></span><span></span><span></span>
+      </div>
+    </header>
+
+    <!-- ===== HERO ===== -->
+    <section class="hero">
+      <div class="orb"></div>
+      <h1>Discover Your<br>Signature Scent</h1>
+      <p>Luxury Arabic perfumes, curated for the bold and elegant.</p>
+    </section>
+
+    <!-- ============================================================
+         VALUE PROPOSITION – "Order Anytime" Section
+         ============================================================ -->
+    <section class="value-prop">
+      <div class="value-content">
+        <span class="value-tag">✨ 24/7 Access</span>
+        <h2>Your Scent, Your Schedule</h2>
+        <p>
+          Scents by Samir is designed for <strong>your convenience</strong>. 
+          Browse our curated collection, place your order, and confirm your 
+          WhatsApp number – <strong>anytime, day or night</strong>. 
+          No more waiting for store hours or replying to messages. 
+          Your fragrance journey is always open.
+        </p>
+        <div class="value-features">
+          <div class="value-feature">
+            <span class="feature-icon">🕒</span>
+            <span>Order 24/7</span>
+          </div>
+          <div class="value-feature">
+            <span class="feature-icon">📱</span>
+            <span>WhatsApp Checkout</span>
+          </div>
+          <div class="value-feature">
+            <span class="feature-icon">🚚</span>
+            <span>Fast Delivery</span>
+          </div>
+        </div>
+        <a href="shop.html" class="btn-primary">Explore the Collection →</a>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         IMMERSIVE COLLECTION SECTIONS (Full-Width Backgrounds)
+         ============================================================ -->
+
+    <!-- 1. Lattafa Collection -->
+    <section class="collection-hero" style="background-image: url('images/Lattafa-scaled.webp');">
+      <div class="collection-overlay">
+        <div class="collection-content">
+          <span class="collection-tag">Luxury Origin</span>
+          <h2>Lattafa Collection</h2>
+          <p>From Dubai’s finest house of scent. Authentic Arabian luxe with powerful Oud, Amber, and refined intensity.</p>
+          <a href="shop.html" class="btn-primary">Shop Collection →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Armaaf Collection -->
+    <section class="collection-hero right" style="background-image: url('images/Armaaf-Collection-category-scaled.webp');">
+      <div class="collection-overlay">
+        <div class="collection-content">
+          <span class="collection-tag">World Class</span>
+          <h2>Armaaf Collection</h2>
+          <p>Bold, fresh, and long-lasting. Armaaf delivers world‑class quality that Durban loves and South Africa trusts.</p>
+          <a href="shop.html" class="btn-primary">Shop Collection →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Fragrance Deluxe Collection -->
+    <section class="collection-hero center" style="background-image: url('images/Fragrance-Deluxe-scaled.webp');">
+      <div class="collection-overlay">
+        <div class="collection-content">
+          <span class="collection-tag">Premium Niche</span>
+          <h2>Fragrance Deluxe</h2>
+          <p>Niche‑style perfumes selected for richness and lasting performance. A curated luxury experience.</p>
+          <a href="shop.html" class="btn-primary">Shop Collection →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Fragrance World Collection -->
+    <section class="collection-hero right" style="background-image: url('images/Fragrance-World-scaled.webp');">
+      <div class="collection-overlay">
+        <div class="collection-content">
+          <span class="collection-tag">Global Trends</span>
+          <h2>Fragrance World</h2>
+          <p>Modern, high‑impact scents blending Middle Eastern richness with contemporary style. Memorable and strong.</p>
+          <a href="shop.html" class="btn-primary">Shop Collection →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. French Avenue Collection -->
+    <section class="collection-hero" style="background-image: url('images/The-French-Avenue-Collection-scaled.webp');">
+      <div class="collection-overlay">
+        <div class="collection-content">
+          <span class="collection-tag">Timeless Elegance</span>
+          <h2>French Avenue</h2>
+          <p>Classic Parisian perfumery with a modern twist. Soft luxury and effortless charm for the sophisticated.</p>
+          <a href="shop.html" class="btn-primary">Shop Collection →</a>
+        </div>
+      </div>
+    </section>
+
+  </div> <!-- /.container -->
+
+  <!-- ===== CHECKOUT OVERLAY ===== -->
+  <div id="checkout-overlay" class="checkout-overlay">
+    <div class="checkout-modal">
+      <h2>🛍️ Finalize Order</h2>
+      <p class="sub">Review your items and confirm details.</p>
+      <div class="order-summary" id="checkout-summary">
+        <!-- Dynamically filled -->
+      </div>
+      <label>Full Name</label>
+      <input type="text" id="cust-name" placeholder="e.g. Samir Johnson">
+
+      <label>Delivery Method</label>
+      <select id="delivery-method">
+        <option value="49">Locker to Locker (R49, 1-2 days)</option>
+        <option value="109">PostNet2PostNet (R109, 2-3 days)</option>
+        <option value="60">PAXI 7-Day (R60, 2-7 days)</option>
+        <option value="100">PAXI 5kg (R100, 2-7 days)</option>
+        <option value="90">The Courier Guy ECO (R90, 1-3 days)</option>
+        <option value="160">The Courier Guy National (R160, 1-3 days)</option>
+        <option value="75">Fastway Standard (R75, 1-3 days)</option>
+        <option value="130">Fastway Express (R130, 1-2 days)</option>
+      </select>
+
+      <label>WhatsApp Number</label>
+      <div class="double-input">
+        <input type="tel" id="wa-1" placeholder="+27 82 123 4567">
+        <input type="tel" id="wa-2" placeholder="Confirm">
+      </div>
+      <div id="wa-error">❗ Numbers do not match.</div>
+      <button class="btn-primary" onclick="placeOrder()">Place Order</button>
+      <button class="btn-secondary" onclick="closeCheckout()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===== FLOATING CART BUTTON ===== -->
+  <button class="floating-cart" onclick="openCheckout()" aria-label="Open Cart">
+    🛒 <span class="floating-cart-count" id="floating-cart-count">0</span>
+  </button>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Navbar hide/show
+    let lastScrollY = window.scrollY;
+    const navbar = document.querySelector('.navbar');
+    window.addEventListener('scroll', () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+        navbar.classList.add('hidden');
+      } else {
+        navbar.classList.remove('hidden');
+      }
+      lastScrollY = currentScrollY;
+    });
+
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      const hamburger = document.getElementById('hamburger');
+      menu.classList.toggle('open');
+      hamburger.classList.toggle('active');
+      document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
+    }
+    function closeMobileMenu() {
+      document.getElementById('mobileMenu').classList.remove('open');
+      document.getElementById('hamburger').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  </script>
+</body>
+</html>
