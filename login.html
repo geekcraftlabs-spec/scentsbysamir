@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login – Scents by Samir</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="theme-color" content="#2c114f">
   <style>
     .login-container {
       min-height: 80vh;
@@ -21,9 +23,27 @@
       max-width: 400px;
       width: 100%;
       box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    .login-box .back-home {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .login-box .back-home:hover {
+      color: white;
     }
     .login-box h1 {
       font-size: 28px;
+      margin-top: 12px;
       margin-bottom: 8px;
     }
     .login-box p {
@@ -64,19 +84,26 @@
       margin-bottom: 12px;
       display: none;
     }
+    @media (max-width: 480px) {
+      .login-box {
+        padding: 32px 20px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="login-container">
       <div class="login-box">
+        <!-- Back to Home -->
+        <a href="index.html" class="back-home">← Home</a>
+
         <h1>🔐 Admin Login</h1>
         <p>Enter your password to access the dashboard.</p>
         <div class="login-error" id="login-error">Invalid password. Please try again.</div>
         <label for="password">Password</label>
         <input type="password" id="password" placeholder="Enter admin password" autofocus>
         <button class="btn-primary" onclick="login()">Login</button>
-        <!-- Hint removed -->
       </div>
     </div>
   </div>
