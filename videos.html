@@ -8,9 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="theme-color" content="#2c114f">
 
-  <!-- TikTok Embed Script -->
-  <script async src="https://www.tiktok.com/embed.js"></script>
-
+  <!-- TikTok Embed Script – moved to bottom for better control -->
   <style>
     /* ===== OVERRIDE: Fix navbar to work with scroll hide ===== */
     .navbar {
@@ -400,9 +398,27 @@
     renderVideos('perfumeTalks', 'perfumeTalksGrid');
     renderVideos('quickPicks', 'quickPicksGrid');
 
-    // TikTok embed script might need to reload after dynamic insertion
-    // The script will automatically parse new embeds when loaded.
+    // ============================================================
+    // FORCE TIKTOK EMBEDS TO PARSE
+    // ============================================================
+    // Try to parse immediately if the API is already available
+    if (window.TikTok && window.TikTok.Embed) {
+      window.TikTok.Embed.parse();
+    } else {
+      // If not, wait for the script to load (it will be loaded right after this script)
+      // We'll set up a listener for when the script loads, but we also retry with a short timeout.
+      // Since we load the script synchronously after this, it will be available soon.
+      // We'll just retry after a small delay.
+      setTimeout(() => {
+        if (window.TikTok && window.TikTok.Embed) {
+          window.TikTok.Embed.parse();
+        }
+      }, 500);
+    }
   </script>
+
+  <!-- ===== TIKTOK EMBED SCRIPT – LOADED AFTER THE VIDEO CARDS ARE INSERTED ===== -->
+  <script src="https://www.tiktok.com/embed.js"></script>
 
   <!-- ===== MOBILE MENU FUNCTIONS ===== -->
   <script>
