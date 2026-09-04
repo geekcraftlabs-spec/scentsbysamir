@@ -99,11 +99,21 @@ app.get('/login.html', (req, res) => {
   res.sendFile(path.join(rootDir, 'login.html'));
 });
 
+// 👇 NEW: Explicit route for Contact page
+app.get('/contact.html', (req, res) => {
+  res.sendFile(path.join(rootDir, 'contact.html'));
+});
+
+// 👇 NEW: Explicit route for favicon (ensures it works on Vercel)
+app.get('/favicon.svg', (req, res) => {
+  res.sendFile(path.join(rootDir, 'favicon.svg'));
+});
+
 // ============================================================
 // PRODUCT DATA (kept for product-detail)
 // ============================================================
 const products = [
-  // ... (keep your 15 products here – unchanged)
+  // ... (your 15 products – unchanged)
 ];
 
 // ============================================================
