@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scents by Samir – Luxury Fragrances</title>
+  <title>Contact – Scents by Samir</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="theme-color" content="#2c114f">
@@ -28,15 +28,151 @@
       align-items: center;
     }
 
-    /* Add padding to body so content isn't hidden behind fixed navbar */
     body {
       padding-top: 80px;
     }
 
-    /* On mobile, adjust padding */
     @media (max-width: 768px) {
       body {
         padding-top: 70px;
+      }
+    }
+
+    /* ===== CONTACT PAGE STYLES ===== */
+    .contact-hero {
+      text-align: center;
+      padding: 40px 0 20px;
+    }
+    .contact-hero h1 {
+      font-size: clamp(36px, 8vw, 64px);
+      font-weight: 900;
+      background: linear-gradient(135deg, #ffffff 20%, var(--purple-light) 50%, var(--purple-glow) 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+    .contact-hero p {
+      color: var(--text-secondary);
+      font-size: 18px;
+      max-width: 640px;
+      margin: 12px auto 0;
+      line-height: 1.7;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin: 40px 0 60px;
+    }
+
+    .contact-info {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .contact-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 20px;
+      padding: 24px 28px;
+      transition: all 0.3s ease;
+    }
+    .contact-card:hover {
+      border-color: rgba(124, 58, 237, 0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+    }
+    .contact-card .icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .contact-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 4px;
+    }
+    .contact-card p {
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .contact-card a {
+      color: var(--purple-light);
+      text-decoration: none;
+      transition: 0.2s;
+    }
+    .contact-card a:hover {
+      color: white;
+    }
+
+    .contact-card .highlight {
+      color: var(--purple-light);
+      font-weight: 600;
+    }
+
+    /* Map */
+    .map-container {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 20px;
+      overflow: hidden;
+      height: 100%;
+      min-height: 400px;
+      transition: all 0.3s ease;
+    }
+    .map-container:hover {
+      border-color: rgba(124, 58, 237, 0.3);
+      box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+    }
+    .map-container iframe {
+      width: 100%;
+      height: 100%;
+      min-height: 400px;
+      border: none;
+      filter: invert(0.9) hue-rotate(180deg);
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      margin: 20px 0 40px;
+    }
+
+    /* Collection point highlight */
+    .collection-point {
+      background: rgba(124, 58, 237, 0.1);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      border-radius: 20px;
+      padding: 20px 28px;
+      margin-top: 8px;
+    }
+    .collection-point p {
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .collection-point .location-name {
+      color: white;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .contact-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .map-container {
+        min-height: 300px;
+      }
+      .map-container iframe {
+        min-height: 300px;
       }
     }
   </style>
@@ -67,10 +203,10 @@
 
       <!-- Desktop Nav -->
       <ul class="nav-links">
-        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="index.html">Home</a></li>
         <li><a href="shop.html">Shop</a></li>
         <li><a href="videos.html">Scents with Samir</a></li>
-        <li><a href="contact.html">Contact</a></li>
+        <li><a href="contact.html" class="active">Contact</a></li>
         <li><a href="login.html">Dashboard</a></li>
         <li><button class="cart-btn" onclick="openCheckout()">🛒 <span class="cart-count" id="cart-count">0</span></button></li>
       </ul>
@@ -82,104 +218,86 @@
     </header>
 
     <!-- ===== HERO ===== -->
-    <section class="hero">
-      <div class="orb"></div>
-      <h1>Discover Your<br>Signature Scent</h1>
-      <p>Luxury Arabic perfumes, curated for the bold and elegant.</p>
+    <section class="contact-hero">
+      <h1>Get in Touch</h1>
+      <p>
+        Have a question about a fragrance, need a recommendation, or want to arrange a collection?  
+        We're here to help – reach out anytime.
+      </p>
     </section>
 
-    <!-- ===== VALUE PROPOSITION ===== -->
-    <section class="value-prop">
-      <div class="value-content">
-        <span class="value-tag">✨ 24/7 Access</span>
-        <h2>Your Scent, Your Schedule</h2>
-        <p>
-          Scents by Samir is designed for <strong>your convenience</strong>.
-          Browse our curated collection, place your order, and confirm your
-          WhatsApp number – <strong>anytime, day or night</strong>.
-          No more waiting for store hours or replying to messages.
-          Your fragrance journey is always open.
-        </p>
-        <div class="value-features">
-          <div class="value-feature">
-            <span class="feature-icon">🕒</span>
-            <span>Order 24/7</span>
-          </div>
-          <div class="value-feature">
-            <span class="feature-icon">📱</span>
-            <span>WhatsApp Checkout</span>
-          </div>
-          <div class="value-feature">
-            <span class="feature-icon">🚚</span>
-            <span>Fast Delivery</span>
-          </div>
+    <hr class="section-divider">
+
+    <!-- ===== CONTACT GRID ===== -->
+    <div class="contact-grid">
+      <!-- Left: Contact Info -->
+      <div class="contact-info">
+        <div class="contact-card">
+          <div class="icon">📞</div>
+          <h3>Phone / WhatsApp</h3>
+          <p>
+            <a href="tel:+27684858415">068 485 8415</a>
+          </p>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+            Available 9am – 6pm, Mon–Sat
+          </p>
         </div>
-        <a href="shop.html" class="btn-primary">Explore the Collection →</a>
-      </div>
-    </section>
 
-    <!-- ============================================================
-         IMMERSIVE COLLECTION SECTIONS
-         ============================================================ -->
+        <div class="contact-card">
+          <div class="icon">📧</div>
+          <h3>Email</h3>
+          <p>
+            <a href="mailto:info@geekcraftlabs.com">info@geekcraftlabs.com</a>
+          </p>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+            We'll get back to you within 24 hours.
+          </p>
+        </div>
 
-    <!-- 1. Lattafa Collection -->
-    <section class="collection-hero" style="background-image: url('images/Lattafa-scaled.webp');">
-      <div class="collection-overlay">
-        <div class="collection-content">
-          <span class="collection-tag">Luxury Origin</span>
-          <h2>Lattafa Collection</h2>
-          <p>From Dubai’s finest house of scent. Authentic Arabian luxe with powerful Oud, Amber, and refined intensity.</p>
-          <a href="shop.html" class="btn-primary">Shop Collection →</a>
+        <div class="contact-card collection-point">
+          <div class="icon">📍</div>
+          <h3 style="color: white;">Collection Point</h3>
+          <p>
+            <span class="location-name">Gandhi Square</span><br>
+            Shop 12, Ground Floor<br>
+            85 Commissioner Street<br>
+            Johannesburg CBD, 2001
+          </p>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+            ⏰ Collection by appointment only – please WhatsApp us to arrange.
+          </p>
         </div>
       </div>
-    </section>
 
-    <!-- 2. Armaaf Collection -->
-    <section class="collection-hero right" style="background-image: url('images/Armaaf-Collection-category-scaled.webp');">
-      <div class="collection-overlay">
-        <div class="collection-content">
-          <span class="collection-tag">World Class</span>
-          <h2>Armaaf Collection</h2>
-          <p>Bold, fresh, and long-lasting. Armaaf delivers world‑class quality that Durban loves and South Africa trusts.</p>
-          <a href="shop.html" class="btn-primary">Shop Collection →</a>
-        </div>
+      <!-- Right: Map -->
+      <div class="map-container">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3583.4457!2d28.0402!3d-26.2030!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1e950d10b5b6c1e7%3A0x5b23c8f7d9c7e8b9!2sGandhi%20Square%20Mall!5e0!3m2!1sen!2sza!4v1700000000000"
+          allowfullscreen=""
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          title="Gandhi Square Mall, Johannesburg Map"
+        ></iframe>
       </div>
-    </section>
+    </div>
 
-    <!-- 3. Fragrance Deluxe Collection -->
-    <section class="collection-hero center" style="background-image: url('images/Fragrance-Deluxe-scaled.webp');">
-      <div class="collection-overlay">
-        <div class="collection-content">
-          <span class="collection-tag">Premium Niche</span>
-          <h2>Fragrance Deluxe</h2>
-          <p>Niche‑style perfumes selected for richness and lasting performance. A curated luxury experience.</p>
-          <a href="shop.html" class="btn-primary">Shop Collection →</a>
-        </div>
-      </div>
-    </section>
+    <hr class="section-divider">
 
-    <!-- 4. Fragrance World Collection -->
-    <section class="collection-hero right" style="background-image: url('images/Fragrance-World-scaled.webp');">
-      <div class="collection-overlay">
-        <div class="collection-content">
-          <span class="collection-tag">Global Trends</span>
-          <h2>Fragrance World</h2>
-          <p>Modern, high‑impact scents blending Middle Eastern richness with contemporary style. Memorable and strong.</p>
-          <a href="shop.html" class="btn-primary">Shop Collection →</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- 5. French Avenue Collection -->
-    <section class="collection-hero" style="background-image: url('images/The-French-Avenue-Collection-scaled.webp');">
-      <div class="collection-overlay">
-        <div class="collection-content">
-          <span class="collection-tag">Timeless Elegance</span>
-          <h2>French Avenue</h2>
-          <p>Classic Parisian perfumery with a modern twist. Soft luxury and effortless charm for the sophisticated.</p>
-          <a href="shop.html" class="btn-primary">Shop Collection →</a>
-        </div>
-      </div>
+    <!-- ===== EXTRA: Quick Contact CTA ===== -->
+    <section style="text-align: center; padding: 20px 0 40px; max-width: 720px; margin: 0 auto;">
+      <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">📱 Prefer WhatsApp?</h2>
+      <p style="color: var(--text-secondary); line-height: 1.8; font-size: 17px;">
+        Tap the button below to start a conversation on WhatsApp – we reply quickly!
+      </p>
+      <a
+        href="https://wa.me/27684858415?text=Hi%20Scents%20by%20Samir!%20I%20have%20a%20question..."
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-primary"
+        style="display: inline-block; margin-top: 16px; text-decoration: none;"
+      >
+        💬 Chat on WhatsApp
+      </a>
     </section>
 
   </div> <!-- /.container -->
@@ -189,12 +307,9 @@
     <div class="checkout-modal">
       <h2>🛍️ Finalize Order</h2>
       <p class="sub">Review your items and confirm details.</p>
-      <div class="order-summary" id="checkout-summary">
-        <!-- Dynamically filled -->
-      </div>
+      <div class="order-summary" id="checkout-summary"></div>
       <label>Full Name</label>
       <input type="text" id="cust-name" placeholder="e.g. Samir Johnson">
-
       <label>Delivery Method</label>
       <select id="delivery-method">
         <option value="49">Locker to Locker (R49, 1-2 days)</option>
@@ -206,7 +321,6 @@
         <option value="75">Fastway Standard (R75, 1-3 days)</option>
         <option value="130">Fastway Express (R130, 1-2 days)</option>
       </select>
-
       <label>WhatsApp Number</label>
       <div style="display:flex; align-items:center; background:rgba(255,255,255,0.05); border:1px solid #2a2744; border-radius:16px; overflow:hidden;">
         <span style="padding:0 12px; color:var(--text-secondary); font-weight:600; background:rgba(255,255,255,0.05); height:100%; display:flex; align-items:center; font-size:15px;">+27</span>
@@ -217,13 +331,12 @@
         <input type="tel" id="wa-2" placeholder="82 123 4567" style="border:none; border-radius:0; flex:1; background:transparent; padding:14px 16px; color:white; font-size:15px; outline:none;">
       </div>
       <div id="wa-error">❗ Numbers do not match.</div>
-
       <button class="btn-primary" onclick="placeOrder()">Place Order</button>
       <button class="btn-secondary" onclick="closeCheckout()">Cancel</button>
     </div>
   </div>
 
-  <!-- ===== FLOATING CART BUTTON ===== -->
+  <!-- ===== FLOATING CART ===== -->
   <button class="floating-cart" onclick="openCheckout()" aria-label="Open Cart">
     🛒 <span class="floating-cart-count" id="floating-cart-count">0</span>
   </button>
@@ -231,7 +344,6 @@
   <!-- ===== SCRIPTS ===== -->
   <script src="js/products.js"></script>
   <script src="js/cart.js"></script>
-  <script src="js/app.js"></script>
 
   <!-- ===== MOBILE MENU FUNCTIONS ===== -->
   <script>
@@ -251,7 +363,6 @@
 
   <!-- ===== NAVBAR SCROLL SCRIPT ===== -->
   <script>
-    // ===== NAVBAR SCROLL (FIXED VERSION) =====
     const navbar = document.querySelector('.navbar');
     let lastScrollY = window.scrollY;
 

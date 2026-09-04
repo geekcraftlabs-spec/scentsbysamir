@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <title>Dashboard – Scents by Samir</title>
   <link rel="stylesheet" href="css/style.css">
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="theme-color" content="#2c114f">
+
   <style>
     body { padding: 28px; background: #0b0a12; }
 
@@ -401,7 +404,6 @@
           console.error('Error fetching orders:', err);
           document.getElementById('db-status').textContent = '❌ Error: ' + err.message;
           document.getElementById('db-status').className = 'db-status error';
-          // Show empty state
           allOrders = [];
           updateStats();
           updateFilterCounts();

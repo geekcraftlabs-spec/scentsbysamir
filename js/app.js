@@ -1,14 +1,26 @@
-// js/app.js
+// ============================================================
+// APP.JS – FULLY FIXED
+// ============================================================
+
 let currentFilter = 'all';
 let currentSort = 'default';
 let filteredProducts = [...products];
 
+// ===== RENDER PRODUCTS – with null check =====
 function renderProducts(list) {
   const grid = document.getElementById('product-grid');
+
+  // 🔥 FIX: Exit if the grid doesn't exist on this page
+  if (!grid) {
+    console.log('⏭️ No product grid on this page – skipping render');
+    return;
+  }
+
   if (!list || list.length === 0) {
     grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:var(--text-secondary); padding:60px 0;">No products found.</p>`;
     return;
   }
+
   grid.innerHTML = list.map(p => `
     <div class="product-card" data-id="${p.id}">
       <span class="badge-category">${p.category}</span>
@@ -21,7 +33,7 @@ function renderProducts(list) {
     </div>
   `).join('');
 
-  // Re-apply 3D tilt effect
+  // Re-apply 3D tilt effect (if cards exist)
   document.querySelectorAll('.product-card').forEach(card => {
     card.addEventListener('mousemove', (e) => {
       const rect = card.getBoundingClientRect();
@@ -40,64 +52,71 @@ function renderProducts(list) {
   });
 }
 
+// ===== FILTER PRODUCTS =====
 function filterProducts(category) {
   currentFilter = category;
-  // Update active pill
-  document.querySelectorAll('.filter-pills button').forEach(btn => {
+  const pills = document.querySelectorAll('.filter-pills button');
+  pills.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.filter === category);
   });
   applyFiltersAndSort();
 }
 
+// ===== SORT PRODUCTS =====
 function sortProducts() {
   const select = document.getElementById('sortSelect');
-  currentSort = select.value;
-  applyFiltersAndSort();
+  if (select) {
+    currentSort = select.value;
+    applyFiltersAndSort();
+  }
 }
 
+// ===== APPLY FILTERS AND SORT =====
 function applyFiltersAndSort() {
   let result = [...products];
-  // Filter
+
   if (currentFilter !== 'all') {
-    result = result.filter(p => p.category === currentFilter);
+    const isCategory = ['men', 'women', 'unisex'].includes(currentFilter);
+    if (isCategory) {
+      result = result.filter(p => p.category === currentFilter);
+    } else {
+      // It's a brand filter
+      result = result.filter(p => p.brand === currentFilter);
+    }
   }
-  // Sort
+
   switch (currentSort) {
-    case 'price-asc': result.sort((a, b) => a.price - b.price); break;
-    case 'price-desc': result.sort((a, b) => b.price - a.price); break;
-    case 'name-asc': result.sort((a, b) => a.name.localeCompare(b.name)); break;
-    default: break;
+    case 'price-asc':
+      result.sort((a, b) => a.price - b.price);
+      break;
+    case 'price-desc':
+      result.sort((a, b) => b.price - a.price);
+      break;
+    case 'name-asc':
+      result.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    default:
+      break;
   }
+
   filteredProducts = result;
   renderProducts(result);
 }
 
-// Initial render
-renderProducts(products);
-
-// Mobile menu functions (defined globally for inline onclick)
-function toggleMobileMenu() {
-  const menu = document.getElementById('mobileMenu');
-  const hamburger = document.getElementById('hamburger');
-  menu.classList.toggle('open');
-  hamburger.classList.toggle('active');
-  document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
-}
-function closeMobileMenu() {
-  document.getElementById('mobileMenu').classList.remove('open');
-  document.getElementById('hamburger').classList.remove('active');
-  document.body.style.overflow = '';
-}
-// Update mobile cart count
+// ===== UPDATE MOBILE CART COUNT =====
 function updateMobileCartCount() {
   const count = document.getElementById('mobile-cart-count');
-  if (count) count.textContent = cart.length;
+  if (count) {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    count.textContent = cart.length;
+  }
 }
-// Override cart functions to update mobile too
-const originalAddToCart = window.addToCart;
-window.addToCart = function(id) {
-  originalAddToCart(id);
+
+// ===== INIT – only run if product grid exists =====
+document.addEventListener('DOMContentLoaded', function() {
+  const grid = document.getElementById('product-grid');
+  if (grid) {
+    renderProducts(products);
+  }
   updateMobileCartCount();
-};
-// Initial update
-setTimeout(updateMobileCartCount, 100);
+});

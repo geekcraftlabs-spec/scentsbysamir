@@ -3,9 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <title>Shop – Scents by Samir</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="theme-color" content="#2c114f">
+
+  <style>
+    /* ===== OVERRIDE: Fix navbar to work with scroll hide ===== */
+    .navbar {
+      position: fixed !important;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      z-index: 999;
+      background: rgba(44, 17, 79, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.3s ease-in-out;
+      padding: 14px 28px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    body {
+      padding-top: 80px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding-top: 70px;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -14,9 +46,9 @@
     <button class="close-btn" onclick="closeMobileMenu()">✕</button>
     <a href="index.html">🏠 Home</a>
     <a href="shop.html">🛍️ Shop</a>
-    <a href="#">✨ About</a>
-    <a href="#">📬 Contact</a>
-    <a href="login.html" target="_blank">📊 Dashboard</a>
+    <a href="videos.html">🎬 Scents with Samir</a>
+    <a href="contact.html">📬 Contact</a>
+    <a href="login.html">📊 Dashboard</a>
     <a href="#" class="mobile-cart-btn" onclick="openCheckout()">🛒 Cart (<span id="mobile-cart-count">0</span>)</a>
   </div>
 
@@ -35,10 +67,9 @@
       <ul class="nav-links">
         <li><a href="index.html">Home</a></li>
         <li><a href="shop.html" class="active">Shop</a></li>
-        <li><a href="#">About</a></li>
-        <li><a href="videos.html">🎬 Scents with Samir</a></li>
-        <li><a href="#">Contact</a></li>
-        <li><a href="login.html" target="_blank">Dashboard</a></li>
+        <li><a href="videos.html">Scents with Samir</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="login.html">Dashboard</a></li>
         <li><button class="cart-btn" onclick="openCheckout()">🛒 <span class="cart-count" id="cart-count">0</span></button></li>
       </ul>
 
@@ -98,7 +129,6 @@
         <option value="130">Fastway Express (R130, 1-2 days)</option>
       </select>
 
-      <!-- ===== WHATSAPP INPUT WITH +27 PREFIX ===== -->
       <label>WhatsApp Number</label>
       <div style="display:flex; align-items:center; background:rgba(255,255,255,0.05); border:1px solid #2a2744; border-radius:16px; overflow:hidden;">
         <span style="padding:0 12px; color:var(--text-secondary); font-weight:600; background:rgba(255,255,255,0.05); height:100%; display:flex; align-items:center; font-size:15px;">+27</span>
@@ -124,21 +154,9 @@
   <script src="js/products.js"></script>
   <script src="js/cart.js"></script>
   <script src="js/app.js"></script>
-  <script>
-    // Navbar hide/show
-    let lastScrollY = window.scrollY;
-    const navbar = document.querySelector('.navbar');
-    window.addEventListener('scroll', () => {
-      const currentScrollY = window.scrollY;
-      if (currentScrollY > lastScrollY && currentScrollY > 80) {
-        navbar.classList.add('hidden');
-      } else {
-        navbar.classList.remove('hidden');
-      }
-      lastScrollY = currentScrollY;
-    });
 
-    // Mobile menu toggle
+  <!-- ===== MOBILE MENU FUNCTIONS ===== -->
+  <script>
     function toggleMobileMenu() {
       const menu = document.getElementById('mobileMenu');
       const hamburger = document.getElementById('hamburger');
@@ -152,5 +170,23 @@
       document.body.style.overflow = '';
     }
   </script>
+
+  <!-- ===== NAVBAR SCROLL SCRIPT ===== -->
+  <script>
+    const navbar = document.querySelector('.navbar');
+    let lastScrollY = window.scrollY;
+
+    window.addEventListener('scroll', function() {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > lastScrollY && currentScrollY > 80) {
+        navbar.classList.add('hidden');
+      } else {
+        navbar.classList.remove('hidden');
+      }
+      lastScrollY = currentScrollY;
+    });
+  </script>
+
 </body>
 </html>
