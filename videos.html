@@ -5,11 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scents with Samir – Video Hub</title>
   <link rel="stylesheet" href="css/style.css">
+  <!-- ===== FAVICON ===== -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <meta name="theme-color" content="#2c114f">
 
   <style>
-    /* Page-specific enhancements */
     .videos-hero {
       text-align: center;
       padding: 40px 0 20px;
@@ -420,10 +423,11 @@
     renderVideos('quickPicks', 'quickPicksGrid');
 
     // ============================================================
-    // NAVBAR HIDE/SHOW + MOBILE MENU
+    // NAVBAR HIDE/SHOW ON SCROLL
     // ============================================================
     let lastScrollY = window.scrollY;
     const navbar = document.querySelector('.navbar');
+
     window.addEventListener('scroll', () => {
       const currentScrollY = window.scrollY;
       if (currentScrollY > lastScrollY && currentScrollY > 80) {
@@ -434,6 +438,9 @@
       lastScrollY = currentScrollY;
     });
 
+    // ============================================================
+    // MOBILE MENU TOGGLE
+    // ============================================================
     function toggleMobileMenu() {
       const menu = document.getElementById('mobileMenu');
       const hamburger = document.getElementById('hamburger');
@@ -441,6 +448,7 @@
       hamburger.classList.toggle('active');
       document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
     }
+
     function closeMobileMenu() {
       document.getElementById('mobileMenu').classList.remove('open');
       document.getElementById('hamburger').classList.remove('active');

@@ -80,6 +80,7 @@ async function initDatabase() {
 // ============================================================
 // HTML ROUTES
 // ============================================================
+// ===== HTML ROUTES =====
 app.get('/', (req, res) => {
   res.sendFile(path.join(rootDir, 'index.html'));
 });
@@ -88,6 +89,9 @@ app.get('/index.html', (req, res) => {
 });
 app.get('/shop.html', (req, res) => {
   res.sendFile(path.join(rootDir, 'shop.html'));
+});
+app.get('/videos.html', (req, res) => {
+  res.sendFile(path.join(rootDir, 'videos.html'));
 });
 app.get('/dashboard.html', (req, res) => {
   res.sendFile(path.join(rootDir, 'dashboard.html'));
